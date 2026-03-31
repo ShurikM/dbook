@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dbook"
+version = "0.1.0"
+description = "Database metadata compiler for AI agent consumption"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "sqlalchemy>=2.0",
+]
+
+[project.optional-dependencies]
+postgres = ["psycopg2-binary"]
+mysql = ["pymysql"]
+snowflake = ["snowflake-sqlalchemy"]
+bigquery = ["sqlalchemy-bigquery"]
+pii = ["presidio-analyzer", "presidio-anonymizer"]
+llm = ["anthropic", "openai"]
+dev = [
+    "pytest>=7.0",
+    "tiktoken",
+]
+
+[project.scripts]
+dbook = "dbook.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dbook"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
