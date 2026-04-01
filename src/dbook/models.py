@@ -54,6 +54,7 @@ class TableMeta:
     schema_hash: str = ""
     summary: str = ""
     column_purposes: dict[str, str] = field(default_factory=dict)
+    enum_values: dict[str, list[str]] = field(default_factory=dict)  # col_name -> distinct values
 
 
 @dataclass

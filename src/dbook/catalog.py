@@ -141,6 +141,9 @@ class SQLAlchemyCatalog:
         if include_sample_data:
             sample_data = self._sample_data(table_name, schema, sample_limit)
 
+        # Enum values
+        enum_vals = self._enum_values(table_name, schema, columns, row_count)
+
         return TableMeta(
             name=table_name,
             schema=schema,
@@ -151,6 +154,7 @@ class SQLAlchemyCatalog:
             row_count=row_count,
             comment=comment,
             sample_data=sample_data,
+            enum_values=enum_vals,
         )
 
     def introspect_all(
@@ -246,6 +250,59 @@ class SQLAlchemyCatalog:
         except Exception as e:
             logger.debug("Failed to get table size for %s: %s", table_name, e)
         return None
+
+    def _enum_values(
+        self,
+        table_name: str,
+        schema: str | None,
+        columns: list[ColumnInfo],
+        row_count: int | None,
+    ) -> dict[str, list[str]]:
+        """Detect enum-like columns and query their distinct values.
+
+        Only queries columns that look like enums:
+        - Named: status, type, category, priority, level, role, state, kind, tier, plan, method
+        - Boolean columns
+        - VARCHAR/TEXT with short max length patterns
+
+        Only on tables with < 100K rows. Max 20 distinct values per column.
+        """
+        ENUM_PATTERNS = {  # noqa: N806
+            "status", "type", "category", "priority", "level", "role",
+            "state", "kind", "tier", "plan", "method", "currency", "country",
+            "gender", "variant", "mode", "phase", "grade", "stage",
+        }
+
+        if row_count and row_count > 100000:
+            return {}
+
+        enum_values: dict[str, list[str]] = {}
+        for col in columns:
+            col_lower = col.name.lower()
+            is_enum_like = (
+                col_lower in ENUM_PATTERNS
+                or any(col_lower.endswith(f"_{p}") for p in ENUM_PATTERNS)
+                or "BOOLEAN" in col.type.upper()
+                or "BOOL" in col.type.upper()
+            )
+
+            if not is_enum_like:
+                continue
+
+            try:
+                qualified = self._qualified_name(table_name, schema)
+                with self.engine.connect() as conn:
+                    result = conn.execute(text(
+                        f'SELECT DISTINCT "{col.name}" FROM {qualified}'  # noqa: S608
+                        f' WHERE "{col.name}" IS NOT NULL LIMIT 20'
+                    ))
+                    values = sorted([str(row[0]) for row in result if row[0] is not None])
+                    if values and len(values) <= 20:
+                        enum_values[col.name] = values
+            except Exception as e:
+                logger.debug("Failed to get enum values for %s.%s: %s", table_name, col.name, e)
+
+        return enum_values
 
     @staticmethod
     def _serialize_value(value: object) -> str | int | float | bool | None:
