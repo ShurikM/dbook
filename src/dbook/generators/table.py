@@ -9,10 +9,13 @@ def generate_table(table: TableMeta, book: BookMeta | None = None) -> str:
     """Generate table .md content."""
     lines = []
 
-    # Header with mechanical summary
+    # Header with summary (LLM if available, otherwise mechanical)
     lines.append(f"# {table.name}")
     lines.append("")
-    lines.append(_mechanical_summary(table))
+    if table.summary:
+        lines.append(table.summary)
+    else:
+        lines.append(_mechanical_summary(table))
     lines.append("")
 
     # Columns table — full format
@@ -32,6 +35,9 @@ def generate_table(table: TableMeta, book: BookMeta | None = None) -> str:
         default = str(col.default) if col.default is not None else ""
         pk = "PK" if col.is_primary_key else ""
         comment = col.comment if col.comment else ""
+        # Use column purpose from LLM enrichment if no explicit comment
+        if not comment and table.column_purposes and col.name in table.column_purposes:
+            comment = table.column_purposes[col.name]
 
         if has_pii:
             pii = col.pii_type if col.pii_type else ""

@@ -59,6 +59,14 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
         from dbook.pii.scanner import scan_book  # type: ignore[import-not-found]
         scan_book(book)
 
+    # LLM enrichment (if mode requires it)
+    if book.mode in ("llm", "full"):
+        try:
+            from dbook.llm.enricher import enrich_book as llm_enrich
+            llm_enrich(book, book._llm_provider)  # type: ignore[attr-defined]
+        except (ImportError, AttributeError) as e:
+            logger.warning(f"LLM enrichment skipped: {e}")
+
     # Generate mechanical summaries for tables without summaries
     for schema in book.schemas.values():
         for table in schema.tables.values():

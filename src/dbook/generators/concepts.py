@@ -90,6 +90,13 @@ def generate_concepts(book: BookMeta) -> dict[str, dict[str, list[str]]]:
             "aliases": [],
         }
 
+    # Inject LLM-generated aliases if available
+    alias_map = getattr(book, '_concept_aliases', None)
+    if alias_map:
+        for term, aliases in alias_map.items():
+            if term in result and isinstance(aliases, list):
+                result[term]["aliases"] = aliases
+
     return result
 
 

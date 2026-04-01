@@ -93,14 +93,25 @@ def compile(database_url, output, schemas, incremental, sample_rows, no_sample_d
         )
         click.echo(f"  {pii_count} PII columns detected, sample data redacted")
 
-    # LLM enrichment (Phase 5 — placeholder)
     if llm:
-        try:
-            from dbook.llm.enricher import enrich_book  # type: ignore[import-not-found]
-            click.echo("Enriching with LLM...")
-            enrich_book(book, provider=llm_provider, api_key=llm_key)
-        except ImportError:
-            click.echo("Warning: LLM enrichment requires dbook[llm]. Install with: pip install dbook[llm]", err=True)
+        if not llm_provider:
+            click.echo("Error: --llm-provider required with --llm", err=True)
+            sys.exit(1)
+        if not llm_key and llm_provider != "mock":
+            click.echo("Error: --llm-key required with --llm", err=True)
+            sys.exit(1)
+
+        from dbook.llm.provider import create_provider
+        provider = create_provider(llm_provider, api_key=llm_key or "", model=None)
+        book._llm_provider = provider  # type: ignore[attr-defined]
+
+        from dbook.llm.enricher import enrich_book as llm_enrich
+        click.echo("Enriching with LLM...")
+        result = llm_enrich(book, provider)
+        click.echo(f"  {result['tables_enriched']} tables enriched")
+        click.echo(f"  {result['schemas_enriched']} schema narratives generated")
+        click.echo(f"  {result['aliases_added']} concept aliases added")
+        click.echo(f"  {result['total_llm_calls']} LLM calls made")
 
     # Compile
     start = time.monotonic()
