@@ -44,34 +44,65 @@ class MockProvider:
             return "Mock LLM response for unknown prompt type."
 
     def _mock_table_summary(self, prompt: str) -> str:
-        # Extract table name from prompt
-        if "auth_users" in prompt:
-            return "Core user accounts table storing authentication credentials, profile information, and account status. Created during user registration and referenced by sessions, orders, and analytics events."
-        elif "billing_orders" in prompt:
-            return "Customer purchase orders tracking order lifecycle from creation through fulfillment. Links customers to their purchases with status tracking and discount application."
-        elif "billing_payments" in prompt:
-            return "Payment transaction records for settled invoices. Tracks payment method, amount, and processing timestamp."
-        elif "billing_invoices" in prompt:
-            return "Invoice records generated from customer orders. Tracks billing contact, amounts, and payment status through draft-sent-paid lifecycle."
-        elif "analytics_events" in prompt:
-            return "User interaction event log capturing page views, clicks, purchases, and signups. Used for behavioral analytics and conversion tracking."
-        elif "analytics_daily_revenue" in prompt:
-            return "Pre-aggregated daily revenue metrics summarizing order volume and average order values. Used for financial dashboards and trend analysis."
-        elif "auth_sessions" in prompt:
-            return "Active user login sessions tracking authentication tokens, client IP addresses, and session expiry. Used for session management and security monitoring."
-        elif "auth_roles" in prompt:
-            return "Role-based access control (RBAC) role definitions. Contains the available permission roles that can be assigned to users."
-        elif "billing_products" in prompt:
-            return "Product catalog containing items available for purchase. Stores pricing, categorization, and availability status."
-        elif "billing_order_items" in prompt:
-            return "Individual line items within customer orders. Links products to orders with quantity and unit pricing."
-        elif "billing_discounts" in prompt:
-            return "Promotional discount codes with percentage-based savings. Includes validity periods and usage limits."
-        elif "analytics_funnels" in prompt:
-            return "Conversion funnel definitions tracking multi-step user journeys. Measures drop-off rates between funnel stages."
-        else:
-            # Generic summary for any table
-            return "Database table storing structured records for application data management and querying."
+        # Extract table name from the "Table: <name>" line in the prompt
+        table_name = ""
+        for line in prompt.split("\n"):
+            if line.startswith("Table: "):
+                table_name = line[7:].strip()
+                break
+
+        _SUMMARIES = {
+            # Original 13-table DB
+            "auth_users": "Core user accounts table storing authentication credentials, profile information, and account status. Created during user registration and referenced by sessions, orders, and analytics events.",
+            "billing_orders": "Customer purchase orders tracking order lifecycle from creation through fulfillment. Links customers to their purchases with status tracking and discount application.",
+            "billing_payments": "Payment transaction records for settled invoices. Tracks payment method, amount, and processing timestamp.",
+            "billing_invoices": "Invoice records generated from customer orders. Tracks billing contact, amounts, and payment status through draft-sent-paid lifecycle.",
+            "analytics_events": "User interaction event log capturing page views, clicks, purchases, and signups. Used for behavioral analytics and conversion tracking.",
+            "analytics_daily_revenue": "Pre-aggregated daily revenue metrics summarizing order volume and average order values. Used for financial dashboards and trend analysis.",
+            "auth_sessions": "Active user login sessions tracking authentication tokens, client IP addresses, and session expiry. Used for session management and security monitoring.",
+            "auth_roles": "Role-based access control (RBAC) role definitions. Contains the available permission roles that can be assigned to users.",
+            "billing_products": "Product catalog containing items available for purchase. Stores pricing, categorization, and availability status.",
+            "billing_order_items": "Individual line items within customer orders. Links products to orders with quantity and unit pricing.",
+            "billing_discounts": "Promotional discount codes with percentage-based savings. Includes validity periods and usage limits.",
+            "analytics_funnels": "Conversion funnel definitions tracking multi-step user journeys. Measures drop-off rates between funnel stages.",
+            # Amazon e-commerce tables
+            "customers_accounts": "Core customer accounts with authentication credentials, profile data, and account status for the e-commerce platform.",
+            "customers_addresses": "Customer shipping and billing addresses linked to accounts with default address selection.",
+            "customers_payment_methods": "Stored payment methods (credit card, debit, PayPal) for customer accounts with card details.",
+            "customers_preferences": "Customer preferences for language, currency, and notification settings.",
+            "catalog_categories": "Hierarchical product category tree with parent-child relationships and category paths.",
+            "catalog_products": "Product catalog with ASIN identifiers, pricing, brand, and category classification for items available for purchase.",
+            "catalog_product_images": "Product image gallery storing URLs, display positions, and accessibility alt text.",
+            "catalog_reviews": "Customer product reviews with star ratings, review text, and verified purchase status.",
+            "catalog_inventory": "Real-time stock levels per product per warehouse tracking quantity available, reserved, and reorder points.",
+            "orders_carts": "Shopping cart sessions tracking active, converted, and abandoned carts for customer accounts.",
+            "orders_cart_items": "Individual items in shopping carts with product references, quantities, and unit prices.",
+            "orders_orders": "Customer purchase orders tracking lifecycle from pending through processing, shipped, and delivered.",
+            "orders_order_items": "Line items within orders linking products to orders with quantity, pricing, and item-level status.",
+            "orders_shipments": "Shipment tracking records with carrier, tracking number, ship date, and delivery status.",
+            "orders_returns": "Product return requests with reason, approval status, and refund amount for returned order items.",
+            "billing_refunds": "Refund transactions linked to payments and returns, tracking refund amount, reason, and processing status.",
+            "billing_subscriptions": "Recurring subscription plans (Prime, Music, Kindle) with billing cycle, price, and next billing date.",
+            "billing_subscription_payments": "Subscription billing history tracking periodic payments with period start/end dates.",
+            "billing_gift_cards": "Gift card inventory with unique codes, balance tracking, purchaser and recipient information.",
+            "billing_promotions": "Promotional discount codes with type (percentage/fixed), minimum order requirements, and usage limits.",
+            "analytics_page_views": "Page view tracking with session, page type, referrer, and visitor IP for web analytics.",
+            "analytics_search_queries": "Search query log tracking what customers search for, result counts, and which products they click.",
+            "analytics_click_events": "Click event stream capturing add-to-cart, buy-now, wishlist, and share interactions.",
+            "analytics_conversion_funnels": "Conversion funnel definitions for measuring search-to-purchase and cart-to-checkout drop-off rates.",
+            "analytics_daily_metrics": "Pre-aggregated daily business metrics (revenue, orders, visitors, conversion rate) with dimensional breakdowns.",
+            "analytics_ab_tests": "A/B test experiment results with variant performance metrics, sample sizes, and statistical significance.",
+            "warehouse_warehouses": "Fulfillment center locations with warehouse codes, geographic location, and storage capacity.",
+            "warehouse_picking_lists": "Order picking assignments linking orders to warehouses with worker assignment and pick status.",
+            "warehouse_shipping_rates": "Carrier shipping rate tables by service level, weight range, and delivery zone.",
+            "support_tickets": "Customer support tickets linked to accounts and orders with category, priority, and resolution status.",
+            "support_ticket_messages": "Support ticket conversation messages from customers and agents with message body and timestamps.",
+            "support_faq_articles": "Self-service FAQ knowledge base articles organized by category (returns, billing, shipping, account).",
+        }
+        return _SUMMARIES.get(
+            table_name,
+            "Database table storing structured records for application data management and querying.",
+        )
 
     def _mock_concept_aliases(self, prompt: str) -> str:
         return json.dumps({

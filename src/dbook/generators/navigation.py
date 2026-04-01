@@ -22,15 +22,16 @@ def generate_navigation(book: BookMeta) -> str:
     # Compact table overview
     lines.append(f"## Tables ({total_tables})")
     lines.append("")
-    lines.append("| Table | Rows | Key Columns | References |")
-    lines.append("|-------|------|-------------|------------|")
+    lines.append("| Table | Rows | Key Columns | References | Description |")
+    lines.append("|-------|------|-------------|------------|-------------|")
 
     for _schema_name, schema in sorted(book.schemas.items()):
         for table_name, table in sorted(schema.tables.items()):
             rows = f"{table.row_count:,}" if table.row_count is not None else "-"
             key_cols = _key_columns(table, max_cols=6)
             refs = _references(table)
-            lines.append(f"| {table_name} | {rows} | {key_cols} | {refs} |")
+            desc = _description(table)
+            lines.append(f"| {table_name} | {rows} | {key_cols} | {refs} | {desc} |")
 
     lines.append("")
 
@@ -126,3 +127,15 @@ def _references(table) -> str:
             referred.append(fk.referred_table)
             seen.add(fk.referred_table)
     return ", ".join(referred) if referred else "-"
+
+
+def _description(table, max_len: int = 80) -> str:
+    """Return the table summary, truncated to max_len characters.
+
+    In base mode this will be a mechanical summary (set by the compiler).
+    In LLM mode this will be the semantic summary from the LLM enricher.
+    """
+    desc = table.summary or "-"
+    if len(desc) > max_len:
+        desc = desc[: max_len - 1] + "\u2026"
+    return desc
