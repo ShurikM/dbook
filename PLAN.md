@@ -256,7 +256,7 @@ class ColumnInfo:
     comment: str | None
     pii_type: str | None = None  # Filled by Phase 4 (Presidio)
     pii_confidence: float = 0.0
-    sensitivity: str = "none"    # none | low | medium | high
+    sensitivity: str = "none"    # none | low | medium | high — for agent decision-making, does not control redaction
 
 @dataclass
 class ForeignKeyInfo:
@@ -544,7 +544,7 @@ dbook compile "postgresql://..." --output ./my_dbook --llm --llm-provider anthro
 ---
 
 ### PHASE 4: PII Scanner (Presidio Integration)
-**Goal:** Detect and mark sensitive data, redact PII from sample data in output.
+**Goal:** Detect and mark sensitive data. `--pii` does both detection AND automatic sample data redaction — no separate redaction flag.
 
 **Dependencies:** Phase 2 (needs compiler and table .md generation)
 
@@ -581,7 +581,8 @@ PII_COLUMN_PATTERNS = {
 
 **Output additions:**
 - PII and Sensitivity columns added to table .md column tables
-- Sample data redacted: PII values replaced with [REDACTED:{type}]
+- Sensitivity levels (critical/high/medium/low) on columns are for agent decision-making (e.g., query planning, access control hints) — they do NOT control redaction behavior
+- Sample data redaction is automatic when `--pii` is used: ALL detected PII values in sample data are replaced with [REDACTED:{type}], regardless of sensitivity level
 - Sensitivity Overview section added to NAVIGATION.md
 
 #### Benchmark 4: PII Detection + Token Impact

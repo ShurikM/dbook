@@ -80,14 +80,18 @@ def compile(database_url, output, schemas, incremental, sample_rows, no_sample_d
     total_tables = sum(len(s.tables) for s in book.schemas.values())
     click.echo(f"Found {total_tables} tables in {len(book.schemas)} schema(s) ({elapsed_introspect:.1f}s)")
 
-    # PII scanning (Phase 4 — placeholder)
+    # PII scanning
     if pii:
-        try:
-            from dbook.pii.scanner import scan_book  # type: ignore[import-not-found]
-            click.echo("Scanning for PII...")
-            scan_book(book)
-        except ImportError:
-            click.echo("Warning: PII scanning requires dbook[pii]. Install with: pip install dbook[pii]", err=True)
+        from dbook.pii.scanner import scan_book  # type: ignore[import-not-found]
+        click.echo("Scanning for PII...")
+        scan_book(book)
+        pii_count = sum(
+            1 for s in book.schemas.values()
+            for t in s.tables.values()
+            for c in t.columns
+            if c.pii_type
+        )
+        click.echo(f"  {pii_count} PII columns detected, sample data redacted")
 
     # LLM enrichment (Phase 5 — placeholder)
     if llm:

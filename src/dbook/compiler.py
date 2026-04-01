@@ -54,6 +54,11 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
             if not table.schema_hash:
                 table.schema_hash = compute_table_hash(table)
 
+    # PII scanning (if mode requires it)
+    if book.mode in ("pii", "full"):
+        from dbook.pii.scanner import scan_book  # type: ignore[import-not-found]
+        scan_book(book)
+
     # Generate mechanical summaries for tables without summaries
     for schema in book.schemas.values():
         for table in schema.tables.values():
