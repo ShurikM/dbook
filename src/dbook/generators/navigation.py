@@ -8,29 +8,45 @@ from dbook.models import BookMeta, TableMeta
 # Business-term aliases for mechanical descriptions (base mode).
 # Maps table name substrings to common business-language synonyms.
 MECHANICAL_ALIASES: dict[str, str] = {
-    "cart": "shopping cart",
-    "order": "purchase",
-    "payment": "transaction",
-    "invoice": "bill",
-    "refund": "money back",
-    "subscription": "recurring billing",
-    "inventory": "stock levels",
-    "shipment": "delivery tracking",
-    "review": "rating",
-    "ticket": "support case",
-    "faq": "knowledge base, help articles",
-    "promotion": "discount, promo code, coupon",
-    "gift_card": "gift card, credit",
-    "account": "customer account",
-    "address": "shipping address",
-    "warehouse": "fulfillment center",
-    "ab_test": "experiment, A/B test",
-    "search_query": "search history",
-    "click_event": "user interaction",
-    "page_view": "page visit, browsing",
-    "daily_metrics": "KPIs, dashboard metrics",
-    "picking_list": "warehouse picking",
-    "shipping_rate": "delivery cost",
+    # Shopping
+    "cart": "shopping cart, basket, checkout",
+    "order": "purchase, buy, transaction, order history",
+    "order_item": "line item, also bought, frequently bought together, recommendation",
+    # Billing
+    "payment": "transaction, charge, settlement",
+    "invoice": "bill, statement, receipt",
+    "refund": "money back, return refund, chargeback",
+    "subscription": "recurring billing, membership, plan renewal",
+    "promotion": "discount, promo code, coupon, voucher, deal",
+    "gift_card": "gift card, store credit, gift certificate",
+    # Product
+    "product": "item, merchandise, goods, SKU, top product, popular items, bestseller",
+    "category": "department, product type, classification",
+    "review": "star rating, customer review, product rating, feedback, bestseller, popular",
+    "inventory": "stock level, availability, in stock, warehouse inventory",
+    "image": "product photo, picture, gallery",
+    # Customer
+    "account": "customer account, user profile, member, verify identity, account verification, security check, customer history",
+    "address": "shipping address, delivery address, location, mailing",
+    "payment_method": "credit card, saved card, billing method",
+    "preference": "settings, notification, language preference",
+    # Fulfillment
+    "shipment": "delivery tracking, shipping status, carrier, where is my order",
+    "return": "return request, RMA, send back",
+    "warehouse": "fulfillment center, distribution center",
+    "picking_list": "warehouse picking, fulfillment, pack and ship",
+    "shipping_rate": "delivery cost, shipping fee, postage",
+    # Support
+    "ticket": "support case, support cases, support request, support requests, customer history, open case, open cases, help request",
+    "ticket_message": "support reply, case comment, conversation",
+    "faq": "knowledge base, help article, self-service, how to",
+    # Analytics
+    "page_view": "page visit, browsing, traffic",
+    "search_query": "search history, what people search, search log",
+    "click_event": "user interaction, click tracking, engagement",
+    "conversion_funnel": "conversion rate, search funnel, purchase conversion, funnel analysis, drop-off",
+    "daily_metric": "KPI, dashboard, business metrics, performance",
+    "ab_test": "experiment, A/B test, variant test, split test",
 }
 
 
@@ -55,6 +71,16 @@ def _mechanical_description(table: TableMeta) -> str:
     for pattern, alias_text in MECHANICAL_ALIASES.items():
         if pattern in name_lower:
             aliases.append(alias_text)
+
+    # Also detect patterns from column names
+    col_names_str = " ".join(c.name for c in table.columns).lower()
+    aliases_found = " ".join(aliases).lower()
+    if "rating" in col_names_str and "rating" not in aliases_found:
+        aliases.append("star rating, product rating")
+    if "conversion" in col_names_str and "conversion" not in aliases_found:
+        aliases.append("conversion rate")
+    if "tracking" in col_names_str and "tracking" not in aliases_found:
+        aliases.append("tracking, shipment tracking")
 
     # Build description from column types
     parts: list[str] = []
@@ -208,16 +234,20 @@ def _references(table) -> str:
     return ", ".join(referred) if referred else "-"
 
 
-def _description(table: TableMeta, book: BookMeta | None = None, max_len: int = 80) -> str:
+def _description(table: TableMeta, book: BookMeta | None = None, max_len: int = 160) -> str:
     """Return table description for the NAVIGATION.md overview.
 
     In base mode, uses _mechanical_description with business-term aliases.
-    In LLM mode, uses the LLM-generated semantic summary.
+    In LLM mode, uses the LLM-generated semantic summary (longer limit to
+    preserve business-term vocabulary).
     """
     if book and book.mode in ("llm", "full"):
         desc = table.summary or "-"
+        # LLM summaries carry richer business vocabulary; allow more room
+        effective_max = max(max_len, 200)
     else:
         desc = _mechanical_description(table)
-    if len(desc) > max_len:
-        desc = desc[: max_len - 1] + "\u2026"
+        effective_max = max_len
+    if len(desc) > effective_max:
+        desc = desc[: effective_max - 1] + "\u2026"
     return desc
