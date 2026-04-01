@@ -5,8 +5,24 @@ from __future__ import annotations
 from dbook.models import BookMeta
 
 
-def generate_navigation(book: BookMeta) -> str:
-    """Generate NAVIGATION.md content from BookMeta."""
+def generate_navigation(
+    book: BookMeta,
+    concepts: dict | None = None,
+    has_concepts_file: bool = False,
+) -> str:
+    """Generate NAVIGATION.md content from BookMeta.
+
+    Parameters
+    ----------
+    book : BookMeta
+        The introspected database metadata.
+    concepts : dict | None
+        Concept index from ``generate_concepts(book)``.  When provided the
+        top terms are embedded as a compact "Quick Lookup" table.
+    has_concepts_file : bool
+        Whether concepts.json will be written alongside this file (large DB).
+        Controls the "How to Navigate" instructions.
+    """
     lines = []
     lines.append(f"# Database Book: {book.dialect}")
     lines.append("")
@@ -53,12 +69,33 @@ def generate_navigation(book: BookMeta) -> str:
                 lines.append(f"| {schema_name} | {len(pii_cols)} | {', '.join(types)} |")
         lines.append("")
 
+    # Quick Lookup — inline concept index
+    if concepts:
+        from dbook.generators.concepts import generate_compact_lookup
+
+        # For large DBs, show fewer terms (concepts.json has the rest)
+        max_terms = 10 if has_concepts_file else 20
+        lookup_table = generate_compact_lookup(
+            concepts, max_terms=max_terms, max_columns=3,
+        )
+        if lookup_table:
+            lines.append("## Quick Lookup")
+            lines.append("")
+            lines.append(lookup_table)
+            lines.append("")
+
     # How to navigate
     lines.append("## How to Navigate")
     lines.append("")
-    lines.append("1. `concepts.json` — find terms")
-    lines.append("2. `schemas/{s}/_manifest.md` — schema overview")
-    lines.append("3. `schemas/{s}/{table}.md` — table detail")
+    if has_concepts_file:
+        # Large DB — concepts.json exists as a separate file
+        lines.append("1. Read this file for overview and term lookup")
+        lines.append("2. If the term you need isn't in Quick Lookup above, check `concepts.json`")
+        lines.append("3. `schemas/{s}/{table}.md` — table detail")
+    else:
+        # Small DB — everything is in this file
+        lines.append("1. Read this file for overview and term lookup")
+        lines.append("2. `schemas/{s}/{table}.md` — table detail")
     lines.append("")
 
     return "\n".join(lines)

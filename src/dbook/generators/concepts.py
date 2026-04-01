@@ -100,6 +100,52 @@ def generate_concepts(book: BookMeta) -> dict[str, dict[str, list[str]]]:
     return result
 
 
+def generate_compact_lookup(concepts: dict, max_terms: int = 20, max_columns: int = 5) -> str:
+    """Generate a compact markdown table of top concepts for embedding in NAVIGATION.md."""
+    # Sort by number of table references (most connected terms first)
+    sorted_terms = sorted(
+        concepts.items(),
+        key=lambda x: len(x[1].get("tables", [])) + len(x[1].get("columns", [])),
+        reverse=True,
+    )[:max_terms]
+
+    if not sorted_terms:
+        return ""
+
+    lines = []
+    lines.append("| Term | Tables | Key Columns |")
+    lines.append("|------|--------|-------------|")
+
+    for term, data in sorted_terms:
+        tables = data.get("tables", [])
+        columns = data.get("columns", [])
+
+        # Shorten table paths: "schemas/default/auth_users.md" -> "auth_users"
+        short_tables = []
+        for t in tables[:3]:
+            name = t.rsplit("/", 1)[-1].replace(".md", "")
+            short_tables.append(name)
+        tables_str = ", ".join(short_tables)
+        if len(tables) > 3:
+            tables_str += f" +{len(tables) - 3}"
+
+        # Shorten column refs: "default.auth_users.email" -> "auth_users.email"
+        short_cols = []
+        for c in columns[:max_columns]:
+            parts = c.split(".")
+            if len(parts) >= 3:
+                short_cols.append(f"{parts[-2]}.{parts[-1]}")
+            else:
+                short_cols.append(c)
+        cols_str = ", ".join(short_cols)
+        if len(columns) > max_columns:
+            cols_str += f" +{len(columns) - max_columns}"
+
+        lines.append(f"| {term} | {tables_str} | {cols_str} |")
+
+    return "\n".join(lines)
+
+
 def generate_concepts_json(book: BookMeta) -> str:
     """Generate concepts.json string.
 

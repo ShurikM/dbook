@@ -10,7 +10,7 @@ from dbook.models import BookMeta
 from dbook.generators.navigation import generate_navigation
 from dbook.generators.manifest import generate_manifest
 from dbook.generators.table import generate_table
-from dbook.generators.concepts import generate_concepts_json
+from dbook.generators.concepts import generate_concepts, generate_concepts_json
 from dbook.generators.checksums import generate_checksums
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,7 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
     Output structure:
         output_dir/
             NAVIGATION.md
-            concepts.json
+            concepts.json          (only for large DBs, 20+ tables)
             checksums.json
             schemas/
                 {schema_name}/
@@ -46,7 +46,12 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
     output.mkdir(parents=True, exist_ok=True)
 
     files_written = 0
-    total_tables = 0
+
+    # Count total tables early (needed for adaptive concept handling)
+    total_tables = sum(
+        len(schema.tables)
+        for schema in book.schemas.values()
+    )
 
     # Compute schema hashes for all tables
     for schema in book.schemas.values():
@@ -73,17 +78,32 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
             if not table.summary:
                 table.summary = _mechanical_summary(table)
 
-    # NAVIGATION.md (L0)
-    nav_content = generate_navigation(book)
+    # Build concept index early (needed for NAVIGATION.md)
+    concepts_dict = generate_concepts(book)
+
+    # Determine if concepts.json should be written (large DB only)
+    is_large_db = total_tables >= 20
+
+    # NAVIGATION.md (L0) — with inline concept lookup
+    nav_content = generate_navigation(
+        book,
+        concepts=concepts_dict,
+        has_concepts_file=is_large_db,
+    )
     (output / "NAVIGATION.md").write_text(nav_content)
     files_written += 1
     logger.info("Written NAVIGATION.md")
 
-    # concepts.json (Ls)
-    concepts_content = generate_concepts_json(book)
-    (output / "concepts.json").write_text(concepts_content)
-    files_written += 1
-    logger.info("Written concepts.json")
+    # concepts.json — only for large DBs (20+ tables)
+    if is_large_db:
+        concepts_content = generate_concepts_json(book)
+        (output / "concepts.json").write_text(concepts_content)
+        files_written += 1
+        logger.info("Written concepts.json (large DB mode)")
+    else:
+        logger.info(
+            "Skipped concepts.json (small DB — concepts embedded in NAVIGATION.md)"
+        )
 
     # checksums.json
     checksums_content = generate_checksums(book)
@@ -95,6 +115,7 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
     schemas_dir = output / "schemas"
     schemas_dir.mkdir(exist_ok=True)
 
+    tables_written = 0
     for schema_name, schema in sorted(book.schemas.items()):
         schema_dir = schemas_dir / schema_name
         schema_dir.mkdir(exist_ok=True)
@@ -109,14 +130,14 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
             table_content = generate_table(table, book)
             (schema_dir / f"{table_name}.md").write_text(table_content)
             files_written += 1
-            total_tables += 1
+            tables_written += 1
 
         logger.info(f"Written schema '{schema_name}': 1 manifest + {len(schema.tables)} tables")
 
     return {
         "files_written": files_written,
         "schemas": len(book.schemas),
-        "tables": total_tables,
+        "tables": tables_written,
     }
 
 

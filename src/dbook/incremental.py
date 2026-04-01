@@ -11,7 +11,7 @@ from dbook.models import BookMeta
 from dbook.generators.navigation import generate_navigation
 from dbook.generators.manifest import generate_manifest
 from dbook.generators.table import generate_table
-from dbook.generators.concepts import generate_concepts_json
+from dbook.generators.concepts import generate_concepts, generate_concepts_json
 from dbook.generators.checksums import generate_checksums
 
 logger = logging.getLogger(__name__)
@@ -87,6 +87,13 @@ def incremental_compile(
             if not table.schema_hash:
                 table.schema_hash = compute_table_hash(table)
 
+    # Count total tables for adaptive concept handling
+    total_tables = sum(
+        len(schema.tables)
+        for schema in book.schemas.values()
+    )
+    is_large_db = total_tables >= 20
+
     # Detect changes
     result = check_changes(book, old_checksums)
     files_written = 0
@@ -153,15 +160,28 @@ def incremental_compile(
             files_written += 1
             logger.info(f"Updated manifest: {schema_name}")
 
+    # Build concept index for NAVIGATION.md
+    concepts_dict = generate_concepts(book)
+
     # Regenerate NAVIGATION.md (always, since table counts/rows may have changed)
-    nav_content = generate_navigation(book)
+    nav_content = generate_navigation(
+        book,
+        concepts=concepts_dict,
+        has_concepts_file=is_large_db,
+    )
     (output / "NAVIGATION.md").write_text(nav_content)
     files_written += 1
 
-    # Regenerate concepts.json (always, since terms may have changed)
-    concepts_content = generate_concepts_json(book)
-    (output / "concepts.json").write_text(concepts_content)
-    files_written += 1
+    # Regenerate concepts.json only for large DBs (20+ tables)
+    if is_large_db:
+        concepts_content = generate_concepts_json(book)
+        (output / "concepts.json").write_text(concepts_content)
+        files_written += 1
+    else:
+        # Remove stale concepts.json if DB shrunk below threshold
+        concepts_file = output / "concepts.json"
+        if concepts_file.exists():
+            concepts_file.unlink()
 
     # Update checksums.json
     checksums_content = generate_checksums(book)
