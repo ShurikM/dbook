@@ -5,12 +5,25 @@ from __future__ import annotations
 from dbook.models import BookMeta, TableMeta
 
 
+def _estimate_table_tokens(table: TableMeta) -> int:
+    """Estimate tokens for a table's .md file without generating it."""
+    base = 80  # header + section headers
+    base += len(table.columns) * 25  # ~25 tokens per column row
+    base += len(table.foreign_keys) * 20  # ~20 per FK row
+    base += len(table.indexes) * 15  # ~15 per index row
+    if table.sample_data:
+        base += len(table.sample_data) * len(table.columns) * 5  # sample rows
+    base += 30  # referenced-by section
+    return base
+
+
 def generate_table(table: TableMeta, book: BookMeta | None = None) -> str:
     """Generate table .md content."""
     lines = []
 
     # Header with summary (LLM if available, otherwise mechanical)
-    lines.append(f"# {table.name}")
+    tok_estimate = _estimate_table_tokens(table)
+    lines.append(f"# {table.name} (~{tok_estimate} tok)")
     lines.append("")
     if table.summary:
         lines.append(table.summary)
@@ -98,15 +111,29 @@ def generate_table(table: TableMeta, book: BookMeta | None = None) -> str:
             lines.append("| " + " | ".join(vals) + " |")
         lines.append("")
 
-    # Referenced By
+    # Related Tables (bidirectional FK navigation)
     if book:
-        refs = _find_references(table.name, table.schema, book)
-        if refs:
-            lines.append("## Referenced By")
+        outgoing = _outgoing_references(table)
+        incoming = _find_references(table.name, table.schema, book)
+        if outgoing or incoming:
+            lines.append("## Related Tables")
             lines.append("")
-            for ref in refs:
-                lines.append(f"- {ref}")
-            lines.append("")
+            if outgoing:
+                lines.append("**References (outgoing):**")
+                for ref_table, ref_col in outgoing:
+                    lines.append(f"- \u2192 {ref_table} via {ref_col} ([{ref_table}.md]({ref_table}.md))")
+                lines.append("")
+            if incoming:
+                lines.append("**Referenced By (incoming):**")
+                for ref in incoming:
+                    # ref is like "schema.table.col" — extract table name for link
+                    parts = ref.split(".")
+                    if len(parts) >= 2:
+                        ref_table_name = parts[1]
+                        lines.append(f"- \u2190 {ref} ([{ref_table_name}.md]({ref_table_name}.md))")
+                    else:
+                        lines.append(f"- \u2190 {ref}")
+                lines.append("")
 
     return "\n".join(lines)
 
@@ -124,6 +151,15 @@ def _mechanical_summary(table: TableMeta) -> str:
     idx_count = len(table.indexes) if table.indexes else 0
     parts.append(f"and {idx_count} index(es).")
     return " ".join(parts)
+
+
+def _outgoing_references(table: TableMeta) -> list[tuple[str, str]]:
+    """Return list of (referred_table, via_column) for outgoing FKs."""
+    result: list[tuple[str, str]] = []
+    for fk in table.foreign_keys:
+        cols = ", ".join(fk.columns)
+        result.append((fk.referred_table, cols))
+    return result
 
 
 def _find_references(table_name: str, schema: str | None, book: BookMeta) -> list[str]:

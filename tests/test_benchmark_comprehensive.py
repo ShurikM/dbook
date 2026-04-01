@@ -164,7 +164,7 @@ class TestComprehensiveBenchmark:
             if md.name != "_manifest.md":
                 rel = str(md.relative_to(path))
                 content = agent.read_file(rel)
-                return "Referenced By" in content
+                return "Related Tables" in content
         return False
 
     def _q_indexes(self, agent, path, _arg):

@@ -2,7 +2,84 @@
 
 from __future__ import annotations
 
-from dbook.models import BookMeta
+from dbook.models import BookMeta, TableMeta
+
+
+# Business-term aliases for mechanical descriptions (base mode).
+# Maps table name substrings to common business-language synonyms.
+MECHANICAL_ALIASES: dict[str, str] = {
+    "cart": "shopping cart",
+    "order": "purchase",
+    "payment": "transaction",
+    "invoice": "bill",
+    "refund": "money back",
+    "subscription": "recurring billing",
+    "inventory": "stock levels",
+    "shipment": "delivery tracking",
+    "review": "rating",
+    "ticket": "support case",
+    "faq": "knowledge base, help articles",
+    "promotion": "discount, promo code, coupon",
+    "gift_card": "gift card, credit",
+    "account": "customer account",
+    "address": "shipping address",
+    "warehouse": "fulfillment center",
+    "ab_test": "experiment, A/B test",
+    "search_query": "search history",
+    "click_event": "user interaction",
+    "page_view": "page visit, browsing",
+    "daily_metrics": "KPIs, dashboard metrics",
+    "picking_list": "warehouse picking",
+    "shipping_rate": "delivery cost",
+}
+
+
+def _estimate_table_tokens(table: TableMeta) -> int:
+    """Estimate tokens for a table's .md file without generating it."""
+    base = 80  # header + section headers
+    base += len(table.columns) * 25  # ~25 tokens per column row
+    base += len(table.foreign_keys) * 20  # ~20 per FK row
+    base += len(table.indexes) * 15  # ~15 per index row
+    if table.sample_data:
+        base += len(table.sample_data) * len(table.columns) * 5  # sample rows
+    base += 30  # referenced-by section
+    return base
+
+
+def _mechanical_description(table: TableMeta) -> str:
+    """Generate a description that includes business-term aliases."""
+    name_lower = table.name.lower()
+
+    # Find matching aliases
+    aliases: list[str] = []
+    for pattern, alias_text in MECHANICAL_ALIASES.items():
+        if pattern in name_lower:
+            aliases.append(alias_text)
+
+    # Build description from column types
+    parts: list[str] = []
+    col_names = [c.name for c in table.columns]
+
+    # Detect key patterns
+    if any("email" in c for c in col_names):
+        parts.append("email")
+    if any("status" in c for c in col_names):
+        parts.append("status tracking")
+    if any("price" in c or "amount" in c or "total" in c for c in col_names):
+        parts.append("financial data")
+    if any("created_at" in c or "date" in c for c in col_names):
+        parts.append("time-series")
+
+    desc = f"{len(table.columns)} cols, {table.row_count or '?'} rows"
+    if table.foreign_keys:
+        refs = [fk.referred_table for fk in table.foreign_keys]
+        desc += f", refs: {', '.join(refs[:2])}"
+    if aliases:
+        desc += f" | {', '.join(aliases)}"
+    if parts:
+        desc += f" [{', '.join(parts[:3])}]"
+
+    return desc
 
 
 def generate_navigation(book: BookMeta) -> str:
@@ -22,16 +99,17 @@ def generate_navigation(book: BookMeta) -> str:
     # Compact table overview
     lines.append(f"## Tables ({total_tables})")
     lines.append("")
-    lines.append("| Table | Rows | Key Columns | References | Description |")
-    lines.append("|-------|------|-------------|------------|-------------|")
+    lines.append("| Table | Rows | Key Columns | References | Description | ~Tok |")
+    lines.append("|-------|------|-------------|------------|-------------|------|")
 
     for _schema_name, schema in sorted(book.schemas.items()):
         for table_name, table in sorted(schema.tables.items()):
             rows = f"{table.row_count:,}" if table.row_count is not None else "-"
             key_cols = _key_columns(table, max_cols=6)
             refs = _references(table)
-            desc = _description(table)
-            lines.append(f"| {table_name} | {rows} | {key_cols} | {refs} | {desc} |")
+            desc = _description(table, book)
+            tok = _estimate_table_tokens(table)
+            lines.append(f"| {table_name} | {rows} | {key_cols} | {refs} | {desc} | {tok} |")
 
     lines.append("")
 
@@ -51,7 +129,8 @@ def generate_navigation(book: BookMeta) -> str:
     # Navigate instructions
     lines.append("## Navigate")
     lines.append("1. Scan the table above to find what you need")
-    lines.append("2. Read `schemas/{schema}/{table}.md` for full details")
+    lines.append("2. Check the `~Tok` column to budget your read")
+    lines.append("3. Read `schemas/{schema}/{table}.md` for full details")
     lines.append("")
 
     return "\n".join(lines)
@@ -129,13 +208,16 @@ def _references(table) -> str:
     return ", ".join(referred) if referred else "-"
 
 
-def _description(table, max_len: int = 80) -> str:
-    """Return the table summary, truncated to max_len characters.
+def _description(table: TableMeta, book: BookMeta | None = None, max_len: int = 80) -> str:
+    """Return table description for the NAVIGATION.md overview.
 
-    In base mode this will be a mechanical summary (set by the compiler).
-    In LLM mode this will be the semantic summary from the LLM enricher.
+    In base mode, uses _mechanical_description with business-term aliases.
+    In LLM mode, uses the LLM-generated semantic summary.
     """
-    desc = table.summary or "-"
+    if book and book.mode in ("llm", "full"):
+        desc = table.summary or "-"
+    else:
+        desc = _mechanical_description(table)
     if len(desc) > max_len:
         desc = desc[: max_len - 1] + "\u2026"
     return desc

@@ -164,7 +164,7 @@ class TestScaledBenchmark:
         agent = AgentSimulator(compiled_scaled)
 
         content = agent.read_file("schemas/default/auth_users_v2.md")
-        assert "Referenced By" in content
+        assert "Related Tables" in content
 
         savings = (1 - agent.tokens_consumed / scaled_baseline_tokens) * 100
         assert savings >= 95, f"Only {savings:.0f}% savings for Q7"
@@ -239,7 +239,7 @@ class TestScaledBenchmark:
             ("Q2", "How are orders linked to customers?", ["auth_users_v2"], self._run_q2),
             ("Q3", "What tables contain financial data?", ["billing"], self._run_q3),
             ("Q4", "Analytics schema structure", ["analytics"], self._run_q4),
-            ("Q7", "Which tables reference users?", ["Referenced By"], self._run_q7),
+            ("Q7", "Which tables reference users?", ["Related Tables"], self._run_q7),
             ("Q8", "Orders table indexes", ["Indexes"], self._run_q8),
             ("Q9", "Timestamp columns", ["timestamp"], self._run_q9),
             ("Q10", "What changed since compile?", ["checksums"], self._run_q10),
@@ -314,7 +314,7 @@ class TestScaledBenchmark:
     @staticmethod
     def _run_q7(agent: AgentSimulator, path) -> bool:
         content = agent.read_file("schemas/default/auth_users_v2.md")
-        return "Referenced By" in content
+        return "Related Tables" in content
 
     @staticmethod
     def _run_q8(agent: AgentSimulator, path) -> bool:

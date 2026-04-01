@@ -142,7 +142,8 @@ class TestCompileOutput:
 
         users_file = tmp_path / "schemas" / "default" / "auth_users.md"
         content = users_file.read_text()
-        assert "## Referenced By" in content
+        assert "## Related Tables" in content
+        assert "Referenced By (incoming)" in content
         # auth_users is referenced by sessions, user_roles, orders, events
         assert "auth_sessions" in content or "auth_user_roles" in content
 

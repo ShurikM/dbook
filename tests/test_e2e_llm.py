@@ -253,7 +253,7 @@ class TestLLMBenchmark:
         # Q7: Referenced by
         agent.reset()
         users = agent.read_file("schemas/default/auth_users.md")
-        assert "Referenced By" in users
+        assert "Related Tables" in users
 
         # Q10: Checksums
         agent.reset()
@@ -436,7 +436,7 @@ class TestBaseVsLLMComparison:
 
     def _q7(self, agent, path):
         content = agent.read_file("schemas/default/auth_users.md")
-        return "Referenced By" in content
+        return "Related Tables" in content
 
     def _q9(self, agent, path):
         nav = agent.read_file("NAVIGATION.md")

@@ -102,7 +102,7 @@ class TestBenchmarkBase:
 
         users_content = agent.read_file("schemas/default/auth_users.md")
 
-        assert "## Referenced By" in users_content
+        assert "## Related Tables" in users_content
         # Should list tables that reference auth_users
         assert (
             "auth_sessions" in users_content
@@ -190,7 +190,7 @@ class TestBenchmarkBase:
         # Run Q7
         agent.reset()
         content = agent.read_file("schemas/default/auth_users.md")
-        found_refs = "Referenced By" in content
+        found_refs = "Related Tables" in content
         report.results.append(
             BenchmarkResult(
                 question_id="Q7",
