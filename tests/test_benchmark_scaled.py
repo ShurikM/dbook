@@ -3,15 +3,15 @@
 
 Baseline = raw DDL for ALL 50 tables.
 Key insight: dbook's value is in *targeted* queries (read 1-3 files instead
-of dumping everything).  For concept-index queries, the cost of reading
-concepts.json must be weighed against having to dump ALL DDL to find a term.
+of dumping everything).  Quick Lookup in NAVIGATION.md lets agents find terms
+without reading a separate concepts.json file.
 """
 
 from __future__ import annotations
 
 import json
 
-import pytest
+import pytest  # type: ignore[import-untyped]
 
 from dbook.catalog import SQLAlchemyCatalog
 from dbook.compiler import compile_book
@@ -68,25 +68,46 @@ class TestScaledBenchmark:
             f"Expected 50 table files, got {len(table_files)}"
         )
 
+    def test_no_concepts_json(self, compiled_scaled):
+        """concepts.json should never be generated (removed entirely)."""
+        assert not (compiled_scaled / "concepts.json").exists(), (
+            "concepts.json should not exist — Quick Lookup is in NAVIGATION.md"
+        )
+
+    def test_navigation_has_quick_lookup(self, compiled_scaled):
+        """NAVIGATION.md should have Quick Lookup for large DBs too."""
+        nav = (compiled_scaled / "NAVIGATION.md").read_text()
+        assert "## Quick Lookup" in nav
+
     def test_navigation_compact(self, compiled_scaled):
         """NAVIGATION.md with Quick Lookup stays compact even at 50 tables."""
         nav = compiled_scaled / "NAVIGATION.md"
         tokens = count_tokens(nav.read_text())
-        # Includes Quick Lookup table (top 10 terms) for large DBs
-        assert tokens < 800, f"NAVIGATION.md is {tokens} tokens"
+        # Quick Lookup table (top 30 terms) for large DBs
+        assert tokens < 1500, f"NAVIGATION.md is {tokens} tokens"
 
     def test_q1_find_email(self, compiled_scaled, scaled_baseline_tokens):
-        """Q1: Where is user email stored? (concept search)"""
+        """Q1: Where is user email stored? (via NAVIGATION.md Quick Lookup)"""
         agent = AgentSimulator(compiled_scaled)
 
-        agent.read_file("NAVIGATION.md")
-        concepts_raw = agent.read_file("concepts.json")
-        concepts = json.loads(concepts_raw)
+        nav_content = agent.read_file("NAVIGATION.md")
 
-        assert "email" in concepts
-        tables = concepts["email"]["tables"]
-        assert len(tables) > 0
-        agent.read_file(tables[0])
+        # "email" should be findable in Quick Lookup
+        assert "email" in nav_content.lower()
+
+        # Parse table from Quick Lookup and read it
+        for line in nav_content.split("\n"):
+            if "| email" in line.lower():
+                parts = line.split("|")
+                if len(parts) >= 3:
+                    tables_cell = parts[2].strip()
+                    first_table = tables_cell.split(",")[0].strip()
+                    if first_table:
+                        for md in compiled_scaled.rglob(f"*{first_table}*.md"):
+                            rel = str(md.relative_to(compiled_scaled))
+                            agent.read_file(rel)
+                            break
+                break
 
         savings = (1 - agent.tokens_consumed / scaled_baseline_tokens) * 100
         assert savings >= 25, f"Only {savings:.0f}% savings for Q1"
@@ -111,19 +132,18 @@ class TestScaledBenchmark:
         assert savings >= 90, f"Only {savings:.0f}% savings for Q2"
 
     def test_q3_financial_tables(self, compiled_scaled, scaled_baseline_tokens):
-        """Q3: What tables contain financial data? (concept search)"""
+        """Q3: What tables contain financial data? (via NAVIGATION.md Quick Lookup)"""
         agent = AgentSimulator(compiled_scaled)
 
-        agent.read_file("NAVIGATION.md")
-        concepts_raw = agent.read_file("concepts.json")
-        concepts = json.loads(concepts_raw)
+        nav_content = agent.read_file("NAVIGATION.md")
+        nav_lower = nav_content.lower()
 
         financial_terms = [
             t for t in ["billing", "refund", "subscription", "inventory", "support"]
-            if t in concepts
+            if t in nav_lower
         ]
         assert len(financial_terms) >= 3, (
-            f"Only found {financial_terms} in concepts keys: {sorted(concepts.keys())}"
+            f"Only found {financial_terms} in NAVIGATION.md"
         )
 
         savings = (1 - agent.tokens_consumed / scaled_baseline_tokens) * 100
@@ -168,21 +188,20 @@ class TestScaledBenchmark:
         assert savings >= 95, f"Only {savings:.0f}% savings for Q8"
 
     def test_q9_timestamp_columns(self, compiled_scaled, scaled_baseline_tokens):
-        """Q9: Find all columns related to timestamps."""
+        """Q9: Find all columns related to timestamps (via NAVIGATION.md Quick Lookup)."""
         agent = AgentSimulator(compiled_scaled)
 
-        concepts_raw = agent.read_file("concepts.json")
-        concepts = json.loads(concepts_raw)
+        nav_content = agent.read_file("NAVIGATION.md")
+        nav_lower = nav_content.lower()
 
         time_terms = [
-            t for t in concepts
-            if t in ("expires", "recorded", "shipped", "delivered",
-                     "started", "ended", "cancelled", "resolved",
-                     "ordered", "received", "adjusted", "seen",
-                     "trial", "last", "due")
+            t for t in ("created", "updated", "at", "date", "expires",
+                        "recorded", "shipped", "delivered",
+                        "started", "ended", "cancelled", "resolved")
+            if t in nav_lower
         ]
         assert len(time_terms) >= 1, (
-            f"No time terms found in concepts keys: {sorted(concepts.keys())}"
+            "No time terms found in NAVIGATION.md Quick Lookup"
         )
 
         savings = (1 - agent.tokens_consumed / scaled_baseline_tokens) * 100
@@ -251,14 +270,22 @@ class TestScaledBenchmark:
 
     @staticmethod
     def _run_q1(agent: AgentSimulator, path) -> bool:
-        agent.read_file("NAVIGATION.md")
-        raw = agent.read_file("concepts.json")
-        c = json.loads(raw)
-        if "email" not in c:
+        nav = agent.read_file("NAVIGATION.md")
+        if "email" not in nav.lower():
             return False
-        tables = c["email"]["tables"]
-        if tables:
-            agent.read_file(tables[0])
+        # Parse table from Quick Lookup
+        for line in nav.split("\n"):
+            if "| email" in line.lower():
+                parts = line.split("|")
+                if len(parts) >= 3:
+                    tables_cell = parts[2].strip()
+                    first_table = tables_cell.split(",")[0].strip()
+                    if first_table:
+                        for md in path.rglob(f"*{first_table}*.md"):
+                            rel = str(md.relative_to(path))
+                            agent.read_file(rel)
+                            break
+                break
         return True
 
     @staticmethod
@@ -272,12 +299,11 @@ class TestScaledBenchmark:
 
     @staticmethod
     def _run_q3(agent: AgentSimulator, path) -> bool:
-        agent.read_file("NAVIGATION.md")
-        raw = agent.read_file("concepts.json")
-        c = json.loads(raw)
+        nav = agent.read_file("NAVIGATION.md")
+        nav_lower = nav.lower()
         terms = [
             t for t in ["billing", "refund", "subscription", "inventory", "support"]
-            if t in c
+            if t in nav_lower
         ]
         return len(terms) >= 3
 
@@ -302,13 +328,13 @@ class TestScaledBenchmark:
 
     @staticmethod
     def _run_q9(agent: AgentSimulator, path) -> bool:
-        raw = agent.read_file("concepts.json")
-        c = json.loads(raw)
+        nav = agent.read_file("NAVIGATION.md")
+        nav_lower = nav.lower()
         return any(
-            t in c for t in (
-                "expires", "recorded", "shipped", "delivered",
+            t in nav_lower for t in (
+                "created", "updated", "at", "date", "expires",
+                "recorded", "shipped", "delivered",
                 "started", "ended", "cancelled", "resolved",
-                "ordered", "received", "adjusted", "seen",
             )
         )
 

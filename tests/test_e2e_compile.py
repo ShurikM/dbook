@@ -158,7 +158,7 @@ class TestCompileOutput:
         assert result["tables"] == 13
         assert result["schemas"] == 1  # "default" for SQLite
         # 2 root (NAVIGATION.md + checksums.json) + 1 manifest + 13 tables = 16
-        # (no concepts.json for small DB)
+        # (concepts.json is never generated — Quick Lookup is in NAVIGATION.md)
         assert result["files_written"] >= 15
 
     def test_navigation_under_700_tokens(self, db_engine, tmp_path):
@@ -171,7 +171,7 @@ class TestCompileOutput:
 
         nav = tmp_path / "NAVIGATION.md"
         tokens = count_tokens(nav.read_text())
-        # With Quick Lookup embedded (top 20 terms), budget is higher but still compact
-        assert tokens < 700, (
-            f"NAVIGATION.md is {tokens} tokens, should be < 700"
+        # With Quick Lookup embedded (ALL terms for small DB), budget is higher but still compact
+        assert tokens < 1500, (
+            f"NAVIGATION.md is {tokens} tokens, should be < 1500"
         )

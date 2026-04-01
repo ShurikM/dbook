@@ -46,42 +46,27 @@ def _compile_llm(engine, output_dir: Path) -> Path:
 
 
 def _find_term_in_dbook(agent: AgentSimulator, compiled_path: Path, term: str) -> bool:
-    """Find a term using whatever is available — concepts.json or NAVIGATION.md."""
-    concepts_file = compiled_path / "concepts.json"
-    if concepts_file.exists():
-        raw = agent.read_file("concepts.json")
-        concepts = json.loads(raw)
-        return term in concepts
-    else:
-        # Term should be in NAVIGATION.md Quick Lookup
-        nav = agent.read_file("NAVIGATION.md")
-        return term in nav.lower()
+    """Find a term in NAVIGATION.md Quick Lookup."""
+    nav = agent.read_file("NAVIGATION.md")
+    return term in nav.lower()
 
 
 def _get_table_for_term(agent: AgentSimulator, compiled_path: Path, term: str) -> str | None:
-    """Get the first table file path for a term."""
-    concepts_file = compiled_path / "concepts.json"
-    if concepts_file.exists():
-        raw = agent.read_file("concepts.json")
-        concepts = json.loads(raw)
-        if term in concepts and concepts[term]["tables"]:
-            return concepts[term]["tables"][0]
-    else:
-        # Parse from NAVIGATION.md — find the term row and extract table name
-        nav = agent.read_file("NAVIGATION.md")
-        # Look for term in Quick Lookup table rows
-        for line in nav.split("\n"):
-            if f"| {term}" in line.lower():
-                # Extract first table name from the row
-                parts = line.split("|")
-                if len(parts) >= 3:
-                    tables_cell = parts[2].strip()
-                    first_table = tables_cell.split(",")[0].strip()
-                    if first_table:
-                        # Find the actual file
-                        for md in compiled_path.rglob(f"*{first_table}*.md"):
-                            rel = str(md.relative_to(compiled_path))
-                            return rel
+    """Get the first table file path for a term from NAVIGATION.md Quick Lookup."""
+    nav = agent.read_file("NAVIGATION.md")
+    # Look for term in Quick Lookup table rows
+    for line in nav.split("\n"):
+        if f"| {term}" in line.lower():
+            # Extract first table name from the row
+            parts = line.split("|")
+            if len(parts) >= 3:
+                tables_cell = parts[2].strip()
+                first_table = tables_cell.split(",")[0].strip()
+                if first_table:
+                    # Find the actual file
+                    for md in compiled_path.rglob(f"*{first_table}*.md"):
+                        rel = str(md.relative_to(compiled_path))
+                        return rel
     return None
 
 
@@ -100,7 +85,9 @@ class TestComprehensiveBenchmark:
         # Assert base dbook saves tokens vs no dbook for targeted queries
         for qid, no_db, base_tok, llm_tok, base_ok, llm_ok in results:
             if qid in ("Q7", "Q10"):  # Single-file queries
-                assert base_tok < no_db, f"{qid}: Base dbook ({base_tok}) should be cheaper than no dbook ({no_db})"
+                assert base_tok < no_db, (
+                    f"{qid}: Base dbook ({base_tok}) should be cheaper than no dbook ({no_db})"
+                )
 
     def test_large_db_comparison(self, scaled_db_engine, tmp_path):
         """50-table DB: No dbook vs Base vs LLM."""
@@ -121,7 +108,10 @@ class TestComprehensiveBenchmark:
         assert all(r[4] for r in results), "All base queries should find answers"
 
     def _run_all_questions(self, ddl_tokens, base_dir, llm_dir):
-        """Run 6 questions against base and LLM dirs. Returns list of (qid, no_dbook_tok, base_tok, llm_tok, base_ok, llm_ok)."""
+        """Run 6 questions against base and LLM dirs.
+
+        Returns list of (qid, no_dbook_tok, base_tok, llm_tok, base_ok, llm_ok).
+        """
         questions = [
             ("Q1", "email", self._q_concept_then_table),
             ("Q3", "payment,invoice,billing,order,price", self._q_concept_count),
@@ -141,7 +131,11 @@ class TestComprehensiveBenchmark:
             agent_llm = AgentSimulator(llm_dir)
             llm_ok = runner(agent_llm, llm_dir, arg)
 
-            results.append((qid, ddl_tokens, agent_base.tokens_consumed, agent_llm.tokens_consumed, base_ok, llm_ok))
+            results.append((
+                qid, ddl_tokens,
+                agent_base.tokens_consumed, agent_llm.tokens_consumed,
+                base_ok, llm_ok,
+            ))
 
         return results
 
@@ -156,21 +150,11 @@ class TestComprehensiveBenchmark:
         return found
 
     def _q_concept_count(self, agent, path, terms_csv):
-        """Check how many terms are findable."""
-        agent.read_file("NAVIGATION.md")
+        """Check how many terms are findable in NAVIGATION.md."""
+        nav_content = agent.read_file("NAVIGATION.md")
         terms = [t.strip() for t in terms_csv.split(",")]
-        found = 0
-        # Check NAVIGATION.md content (already read)
-        nav_content = (path / "NAVIGATION.md").read_text().lower()
-        concepts_file = path / "concepts.json"
-
-        if concepts_file.exists():
-            raw = agent.read_file("concepts.json")
-            concepts = json.loads(raw)
-            found = sum(1 for t in terms if t in concepts)
-        else:
-            found = sum(1 for t in terms if t in nav_content)
-
+        nav_lower = nav_content.lower()
+        found = sum(1 for t in terms if t in nav_lower)
         return found >= 3
 
     def _q_references(self, agent, path, _arg):
@@ -206,7 +190,10 @@ class TestComprehensiveBenchmark:
         print(f"  {title}")  # noqa: T201
         print(f"{'=' * 80}")  # noqa: T201
         print(f"\n  No dbook baseline: {ddl_tokens} tokens (agent reads ALL raw DDL)")  # noqa: T201
-        print(f"\n  {'Q':<5} {'No dbook':>10} {'Base':>10} {'Base Save':>10} {'LLM':>10} {'LLM Save':>10} {'Base OK':>8} {'LLM OK':>8}")  # noqa: T201
+        print(  # noqa: T201
+            f"\n  {'Q':<5} {'No dbook':>10} {'Base':>10} {'Base Save':>10}"
+            f" {'LLM':>10} {'LLM Save':>10} {'Base OK':>8} {'LLM OK':>8}"
+        )
         print(f"  {'-' * 75}")  # noqa: T201
 
         base_total = 0
@@ -217,11 +204,18 @@ class TestComprehensiveBenchmark:
         for qid, no_db, base_tok, llm_tok, base_ok, llm_ok in results:
             b_save = f"{(1 - base_tok / no_db) * 100:.0f}%"
             l_save = f"{(1 - llm_tok / no_db) * 100:.0f}%"
-            print(f"  {qid:<5} {no_db:>10} {base_tok:>10} {b_save:>10} {llm_tok:>10} {l_save:>10} {'✓' if base_ok else '✗':>8} {'✓' if llm_ok else '✗':>8}")  # noqa: T201
+            b_mark = "pass" if base_ok else "FAIL"
+            l_mark = "pass" if llm_ok else "FAIL"
+            print(  # noqa: T201
+                f"  {qid:<5} {no_db:>10} {base_tok:>10} {b_save:>10}"
+                f" {llm_tok:>10} {l_save:>10} {b_mark:>8} {l_mark:>8}"
+            )
             base_total += base_tok
             llm_total += llm_tok
-            if base_ok: base_ok_count += 1
-            if llm_ok: llm_ok_count += 1
+            if base_ok:
+                base_ok_count += 1
+            if llm_ok:
+                llm_ok_count += 1
 
         n = len(results)
         base_avg = base_total / n
@@ -230,5 +224,9 @@ class TestComprehensiveBenchmark:
         l_save_avg = f"{(1 - llm_avg / ddl_tokens) * 100:.0f}%"
 
         print(f"  {'-' * 75}")  # noqa: T201
-        print(f"  {'AVG':<5} {ddl_tokens:>10} {base_avg:>10.0f} {b_save_avg:>10} {llm_avg:>10.0f} {l_save_avg:>10} {base_ok_count:>7}/{n} {llm_ok_count:>7}/{n}")  # noqa: T201
+        print(  # noqa: T201
+            f"  {'AVG':<5} {ddl_tokens:>10} {base_avg:>10.0f} {b_save_avg:>10}"
+            f" {llm_avg:>10.0f} {l_save_avg:>10}"
+            f" {base_ok_count:>7}/{n} {llm_ok_count:>7}/{n}"
+        )
         print()  # noqa: T201
