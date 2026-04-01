@@ -11,14 +11,24 @@ def generate_navigation(book: BookMeta) -> str:
     lines.append(f"# Database Book: {book.dialect}")
     lines.append("")
 
-    # Schemas list
+    # Schemas table
     lines.append("## Schemas")
     lines.append("")
+    lines.append("| Schema | Tables | Total Rows | Description |")
+    lines.append("|--------|--------|------------|-------------|")
     for schema_name, schema in sorted(book.schemas.items()):
         table_count = len(schema.tables)
         total_rows = sum(t.row_count or 0 for t in schema.tables.values())
-        lines.append(f"- **{schema_name}**: {table_count} tables, {total_rows:,} rows")
+        description = schema.narrative if schema.narrative else "-"
+        lines.append(f"| {schema_name} | {table_count} | {total_rows:,} | {description} |")
+    lines.append("")
 
+    # Quick Reference — key tables per schema
+    lines.append("## Quick Reference")
+    lines.append("")
+    for schema_name, schema in sorted(book.schemas.items()):
+        table_names = sorted(schema.tables.keys())
+        lines.append(f"- **{schema_name}**: {', '.join(table_names)}")
     lines.append("")
 
     # Sensitivity summary (only if any PII detected)

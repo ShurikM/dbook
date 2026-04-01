@@ -9,36 +9,45 @@ def generate_table(table: TableMeta, book: BookMeta | None = None) -> str:
     """Generate table .md content."""
     lines = []
 
-    # Header with inline summary
+    # Header with mechanical summary
     lines.append(f"# {table.name}")
-    row_info = f" ({table.row_count:,} rows)" if table.row_count is not None else ""
-    pk_info = f" PK: {', '.join(table.primary_key)}" if table.primary_key else ""
-    lines.append(f"{len(table.columns)} cols{row_info}{pk_info}")
+    lines.append("")
+    lines.append(_mechanical_summary(table))
     lines.append("")
 
-    # Columns table — compact format
+    # Columns table — full format
     lines.append("## Columns")
     lines.append("")
 
     has_pii = any(col.pii_type for col in table.columns)
     if has_pii:
-        lines.append("| Column | Type | Null | PK | PII |")
-        lines.append("|--------|------|------|----|-----|")
+        lines.append("| Column | Type | Nullable | Default | PK | Comment | PII | Sensitivity |")
+        lines.append("|--------|------|----------|---------|----|---------|----|-------------|")
     else:
-        lines.append("| Column | Type | Null | PK |")
-        lines.append("|--------|------|------|----|")
+        lines.append("| Column | Type | Nullable | Default | PK | Comment |")
+        lines.append("|--------|------|----------|---------|----|---------| ")
 
     for col in table.columns:
-        nullable = "Y" if col.nullable else "N"
-        pk = "Y" if col.is_primary_key else ""
+        nullable = "YES" if col.nullable else "NO"
+        default = str(col.default) if col.default is not None else ""
+        pk = "PK" if col.is_primary_key else ""
+        comment = col.comment if col.comment else ""
 
         if has_pii:
             pii = col.pii_type if col.pii_type else ""
-            lines.append(f"| {col.name} | {col.type} | {nullable} | {pk} | {pii} |")
+            sensitivity = col.sensitivity if col.sensitivity and col.sensitivity != "none" else ""
+            lines.append(f"| {col.name} | {col.type} | {nullable} | {default} | {pk} | {comment} | {pii} | {sensitivity} |")
         else:
-            lines.append(f"| {col.name} | {col.type} | {nullable} | {pk} |")
+            lines.append(f"| {col.name} | {col.type} | {nullable} | {default} | {pk} | {comment} |")
 
     lines.append("")
+
+    # Primary Key
+    if table.primary_key:
+        lines.append("## Primary Key")
+        lines.append("")
+        lines.append(f"`{', '.join(table.primary_key)}`")
+        lines.append("")
 
     # Foreign Keys
     if table.foreign_keys:
@@ -66,22 +75,21 @@ def generate_table(table: TableMeta, book: BookMeta | None = None) -> str:
             lines.append(f"| {name} | {cols} | {unique} |")
         lines.append("")
 
-    # Sample Data (1 row, first 4 columns, truncated values)
+    # Sample Data — up to 5 rows with ALL columns, truncated at 40 chars
     if table.sample_data:
         lines.append("## Sample Data")
         lines.append("")
         all_cols = list(table.sample_data[0].keys())
-        cols = all_cols[:4]
-        lines.append("| " + " | ".join(cols) + " |")
-        lines.append("|" + "|".join(["---"] * len(cols)) + "|")
-        row = table.sample_data[0]
-        vals = []
-        for c in cols:
-            v = str(row.get(c, ""))
-            if len(v) > 16:
-                v = v[:13] + "..."
-            vals.append(v)
-        lines.append("| " + " | ".join(vals) + " |")
+        lines.append("| " + " | ".join(all_cols) + " |")
+        lines.append("|" + "|".join(["---"] * len(all_cols)) + "|")
+        for row in table.sample_data[:5]:
+            vals = []
+            for c in all_cols:
+                v = str(row.get(c, ""))
+                if len(v) > 40:
+                    v = v[:37] + "..."
+                vals.append(v)
+            lines.append("| " + " | ".join(vals) + " |")
         lines.append("")
 
     # Referenced By
@@ -105,12 +113,11 @@ def _mechanical_summary(table: TableMeta) -> str:
     parts.append(f"and {len(table.columns)} columns")
     if table.primary_key:
         parts.append(f"(PK: {', '.join(table.primary_key)})")
-    if table.foreign_keys:
-        targets = [fk.referred_table for fk in table.foreign_keys]
-        parts.append(f"references {', '.join(targets)}")
-    if table.indexes:
-        parts.append(f"with {len(table.indexes)} index(es)")
-    return " ".join(parts) + "."
+    fk_count = len(table.foreign_keys) if table.foreign_keys else 0
+    parts.append(f"with {fk_count} foreign keys")
+    idx_count = len(table.indexes) if table.indexes else 0
+    parts.append(f"and {idx_count} index(es).")
+    return " ".join(parts)
 
 
 def _find_references(table_name: str, schema: str | None, book: BookMeta) -> list[str]:
@@ -121,5 +128,5 @@ def _find_references(table_name: str, schema: str | None, book: BookMeta) -> lis
             for fk in t_meta.foreign_keys:
                 if fk.referred_table == table_name:
                     cols = ", ".join(fk.columns)
-                    refs.append(f"{t_name}.{cols}")
+                    refs.append(f"{s_name}.{t_name}.{cols}")
     return sorted(refs)

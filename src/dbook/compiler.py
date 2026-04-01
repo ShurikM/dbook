@@ -115,9 +115,8 @@ def _mechanical_summary(table) -> str:
     parts.append(f"and {len(table.columns)} columns")
     if table.primary_key:
         parts.append(f"(PK: {', '.join(table.primary_key)})")
-    if table.foreign_keys:
-        targets = [fk.referred_table for fk in table.foreign_keys]
-        parts.append(f"references {', '.join(targets)}")
-    if table.indexes:
-        parts.append(f"with {len(table.indexes)} index(es)")
-    return " ".join(parts) + "."
+    fk_count = len(table.foreign_keys) if table.foreign_keys else 0
+    parts.append(f"with {fk_count} foreign keys")
+    idx_count = len(table.indexes) if table.indexes else 0
+    parts.append(f"and {idx_count} index(es).")
+    return " ".join(parts)

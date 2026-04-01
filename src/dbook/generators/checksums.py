@@ -27,4 +27,4 @@ def generate_checksums(book: BookMeta) -> str:
             qualified = f"{schema_name}.{table_name}"
             checksums[qualified] = table.schema_hash
 
-    return json.dumps(checksums, separators=(",", ":"), sort_keys=True)
+    return json.dumps(checksums, indent=2, sort_keys=True)

@@ -1,12 +1,13 @@
-"""Build concepts.json — compact term-to-table/column index.
+"""Build concepts.json — term-to-table/column index.
 
-The index is optimised for minimal token consumption. Table references
-use the format ``schemas/<schema>/<table>.md`` so an agent can
-``read_file`` them directly. Column references list only the bare
-column name (deduplicated) to keep the file small.
+The index maps every meaningful term extracted from table and column
+names to the specific table files and qualified column names where
+that term appears.  This allows an agent to look up any term and
+immediately find the relevant tables and columns.
 
-Very short terms (<=2 chars) and ubiquitous structural terms are
-filtered out to reduce noise.
+Only single-character terms and pure numeric strings are filtered out.
+Common terms like "id", "name", "email", "user", "created", "updated"
+are intentionally kept because they are the most frequently searched.
 """
 
 from __future__ import annotations
@@ -16,24 +17,6 @@ import re
 from collections import defaultdict
 
 from dbook.models import BookMeta
-
-# Terms that are too generic to be useful in a concept index.
-# Includes structural, temporal, and common DB-field terms.
-_NOISE_TERMS: frozenset[str] = frozenset({
-    "the", "and", "for", "not", "null", "key", "default",
-    "type", "value", "data",
-    # Common structural/temporal terms
-    "created", "updated", "name", "status", "description",
-    "active", "amount", "date",
-    # Generic field patterns
-    "code", "method", "page", "steps", "unit", "percentage",
-    "count", "rate", "total", "max", "avg", "last", "four",
-    "from", "until", "valid", "uses", "issued", "paid",
-    "processed", "quantity", "price", "category", "card",
-    # Relational / FK-derived terms
-    "contact", "conversion", "discount", "event",
-    "invoice", "password", "product", "role",
-})
 
 
 def _split_name(name: str) -> list[str]:
@@ -50,6 +33,15 @@ def _split_name(name: str) -> list[str]:
     return [t.lower().strip() for t in result.split() if t.strip()]
 
 
+def _is_noise(term: str) -> bool:
+    """Return True only for single-char terms and pure numbers."""
+    if len(term) <= 1:
+        return True
+    if term.isdigit():
+        return True
+    return False
+
+
 def generate_concepts(book: BookMeta) -> dict[str, dict[str, list[str]]]:
     """Generate concept index by splitting table/column names into terms.
 
@@ -61,63 +53,41 @@ def generate_concepts(book: BookMeta) -> dict[str, dict[str, list[str]]]:
     Returns
     -------
     dict[str, dict[str, list[str]]]
-        Mapping of term to ``{"tables": [...], "columns": [...]}``.
+        Mapping of term to ``{"tables": [...], "columns": [...], "aliases": []}``.
     """
     # term -> {tables: set, columns: set}
     table_sets: dict[str, set[str]] = defaultdict(set)
     column_sets: dict[str, set[str]] = defaultdict(set)
 
-    # Collect terms from table-name prefixes (high-level domain concepts)
-    table_prefixes: set[str] = set()
-
     for schema_name, schema in book.schemas.items():
         for table_name, table in schema.tables.items():
-            table_terms = _split_name(table_name)
             table_path = f"schemas/{schema_name}/{table_name}.md"
 
-            # Only keep the first term from table names (the domain prefix)
-            # e.g. "auth" from auth_users, "billing" from billing_orders
-            if table_terms:
-                prefix = table_terms[0]
-                if len(prefix) > 2 and prefix not in _NOISE_TERMS:
-                    table_sets[prefix].add(table_path)
-                    table_prefixes.add(prefix)
+            # Extract ALL terms from table name
+            table_terms = _split_name(table_name)
+            for term in table_terms:
+                if not _is_noise(term):
+                    table_sets[term].add(table_path)
 
-            # Index single-word column names only (e.g. "email",
-            # "phone", "token") — they are the highest-signal terms.
+            # Extract ALL terms from column names
             for col in table.columns:
                 col_terms = _split_name(col.name)
-                if len(col_terms) == 1:
-                    term = col_terms[0]
-                    if len(term) > 2 and term not in _NOISE_TERMS:
-                        column_sets[term].add(col.name)
+                qualified_name = f"{table_name}.{col.name}"
+                for term in col_terms:
+                    if not _is_noise(term):
+                        column_sets[term].add(qualified_name)
                         table_sets[term].add(table_path)
-                # Also index the head term for multi-word columns
-                # that start with a distinctive word.
-                elif col_terms:
-                    head = col_terms[0]
-                    if len(head) > 2 and head not in _NOISE_TERMS:
-                        column_sets[head].add(col.name)
-                        table_sets[head].add(table_path)
 
-    # Build output: keep table-prefix terms (always) and column
-    # terms that appear in only 1 table (highly distinctive).
-    # For prefix terms with many tables, point to the manifest instead
-    # to keep the index compact.
+    # Build output
     all_terms = sorted(table_sets.keys() | column_sets.keys())
     result: dict[str, dict[str, list[str]]] = {}
     for term in all_terms:
         tables = sorted(table_sets.get(term, set()))
-        if term not in table_prefixes and len(tables) > 1:
-            continue
-        # For prefix terms with 3+ tables, point to schema manifest
-        if term in table_prefixes and len(tables) >= 3:
-            # Extract schema name from first table path
-            schema = tables[0].split("/")[1]
-            tables = [f"schemas/{schema}/_manifest.md"]
+        columns = sorted(column_sets.get(term, set()))
         result[term] = {
             "tables": tables,
-            "columns": sorted(column_sets.get(term, set())),
+            "columns": columns,
+            "aliases": [],
         }
 
     return result
@@ -134,7 +104,7 @@ def generate_concepts_json(book: BookMeta) -> str:
     Returns
     -------
     str
-        Compact JSON string of concept mappings.
+        JSON string of concept mappings with indent=2.
     """
     concepts = generate_concepts(book)
-    return json.dumps(concepts, separators=(",", ":"), ensure_ascii=False)
+    return json.dumps(concepts, indent=2, ensure_ascii=False)
