@@ -46,25 +46,24 @@ def _compile_llm(engine, output_dir: Path) -> Path:
 
 
 def _find_term_in_dbook(agent: AgentSimulator, compiled_path: Path, term: str) -> bool:
-    """Find a term in NAVIGATION.md Quick Lookup."""
+    """Find a term in NAVIGATION.md table overview."""
     nav = agent.read_file("NAVIGATION.md")
     return term in nav.lower()
 
 
 def _get_table_for_term(agent: AgentSimulator, compiled_path: Path, term: str) -> str | None:
-    """Get the first table file path for a term from NAVIGATION.md Quick Lookup."""
+    """Get the first table file path for a term from NAVIGATION.md table overview."""
     nav = agent.read_file("NAVIGATION.md")
-    # Look for term in Quick Lookup table rows
+    # Look for term in table overview rows (Key Columns or table name)
     for line in nav.split("\n"):
-        if f"| {term}" in line.lower():
-            # Extract first table name from the row
+        if term in line.lower() and line.startswith("|"):
+            # Extract table name from the first column
             parts = line.split("|")
-            if len(parts) >= 3:
-                tables_cell = parts[2].strip()
-                first_table = tables_cell.split(",")[0].strip()
-                if first_table:
+            if len(parts) >= 2:
+                table_name = parts[1].strip()
+                if table_name and table_name != "Table":
                     # Find the actual file
-                    for md in compiled_path.rglob(f"*{first_table}*.md"):
+                    for md in compiled_path.rglob(f"*{table_name}*.md"):
                         rel = str(md.relative_to(compiled_path))
                         return rel
     return None

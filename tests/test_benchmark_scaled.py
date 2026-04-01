@@ -3,8 +3,8 @@
 
 Baseline = raw DDL for ALL 50 tables.
 Key insight: dbook's value is in *targeted* queries (read 1-3 files instead
-of dumping everything).  Quick Lookup in NAVIGATION.md lets agents find terms
-without reading a separate concepts.json file.
+of dumping everything).  Compact table overview in NAVIGATION.md lets agents
+find tables and key columns without reading individual table files.
 """
 
 from __future__ import annotations
@@ -69,41 +69,40 @@ class TestScaledBenchmark:
         )
 
     def test_no_concepts_json(self, compiled_scaled):
-        """concepts.json should never be generated (removed entirely)."""
+        """concepts.json should never be generated."""
         assert not (compiled_scaled / "concepts.json").exists(), (
-            "concepts.json should not exist — Quick Lookup is in NAVIGATION.md"
+            "concepts.json should not exist"
         )
 
-    def test_navigation_has_quick_lookup(self, compiled_scaled):
-        """NAVIGATION.md should have Quick Lookup for large DBs too."""
+    def test_navigation_has_table_overview(self, compiled_scaled):
+        """NAVIGATION.md should have compact table overview."""
         nav = (compiled_scaled / "NAVIGATION.md").read_text()
-        assert "## Quick Lookup" in nav
+        assert "## Tables" in nav
 
     def test_navigation_compact(self, compiled_scaled):
-        """NAVIGATION.md with Quick Lookup stays compact even at 50 tables."""
+        """NAVIGATION.md with table overview stays compact even at 50 tables."""
         nav = compiled_scaled / "NAVIGATION.md"
         tokens = count_tokens(nav.read_text())
-        # Quick Lookup table (top 30 terms) for large DBs
+        # Compact table overview for 50 tables
         assert tokens < 1500, f"NAVIGATION.md is {tokens} tokens"
 
     def test_q1_find_email(self, compiled_scaled, scaled_baseline_tokens):
-        """Q1: Where is user email stored? (via NAVIGATION.md Quick Lookup)"""
+        """Q1: Where is user email stored? (via NAVIGATION.md table overview)"""
         agent = AgentSimulator(compiled_scaled)
 
         nav_content = agent.read_file("NAVIGATION.md")
 
-        # "email" should be findable in Quick Lookup
+        # "email" should be findable in Key Columns of table overview
         assert "email" in nav_content.lower()
 
-        # Parse table from Quick Lookup and read it
+        # Parse table name from the row where email appears in Key Columns
         for line in nav_content.split("\n"):
-            if "| email" in line.lower():
+            if "email" in line.lower() and line.startswith("|"):
                 parts = line.split("|")
-                if len(parts) >= 3:
-                    tables_cell = parts[2].strip()
-                    first_table = tables_cell.split(",")[0].strip()
-                    if first_table:
-                        for md in compiled_scaled.rglob(f"*{first_table}*.md"):
+                if len(parts) >= 2:
+                    table_name = parts[1].strip()
+                    if table_name and table_name != "Table":
+                        for md in compiled_scaled.rglob(f"*{table_name}*.md"):
                             rel = str(md.relative_to(compiled_scaled))
                             agent.read_file(rel)
                             break
@@ -132,7 +131,7 @@ class TestScaledBenchmark:
         assert savings >= 90, f"Only {savings:.0f}% savings for Q2"
 
     def test_q3_financial_tables(self, compiled_scaled, scaled_baseline_tokens):
-        """Q3: What tables contain financial data? (via NAVIGATION.md Quick Lookup)"""
+        """Q3: What tables contain financial data? (via NAVIGATION.md table overview)"""
         agent = AgentSimulator(compiled_scaled)
 
         nav_content = agent.read_file("NAVIGATION.md")
@@ -188,7 +187,7 @@ class TestScaledBenchmark:
         assert savings >= 95, f"Only {savings:.0f}% savings for Q8"
 
     def test_q9_timestamp_columns(self, compiled_scaled, scaled_baseline_tokens):
-        """Q9: Find all columns related to timestamps (via NAVIGATION.md Quick Lookup)."""
+        """Q9: Find all columns related to timestamps (via NAVIGATION.md table overview)."""
         agent = AgentSimulator(compiled_scaled)
 
         nav_content = agent.read_file("NAVIGATION.md")
@@ -273,15 +272,14 @@ class TestScaledBenchmark:
         nav = agent.read_file("NAVIGATION.md")
         if "email" not in nav.lower():
             return False
-        # Parse table from Quick Lookup
+        # Parse table name from the row where email appears in Key Columns
         for line in nav.split("\n"):
-            if "| email" in line.lower():
+            if "email" in line.lower() and line.startswith("|"):
                 parts = line.split("|")
-                if len(parts) >= 3:
-                    tables_cell = parts[2].strip()
-                    first_table = tables_cell.split(",")[0].strip()
-                    if first_table:
-                        for md in path.rglob(f"*{first_table}*.md"):
+                if len(parts) >= 2:
+                    table_name = parts[1].strip()
+                    if table_name and table_name != "Table":
+                        for md in path.rglob(f"*{table_name}*.md"):
                             rel = str(md.relative_to(path))
                             agent.read_file(rel)
                             break

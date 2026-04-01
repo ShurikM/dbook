@@ -21,25 +21,21 @@ class TestCompileOutput:
         assert nav.exists()
         content = nav.read_text()
         assert "# Database Book:" in content
-        assert "## Schemas" in content
-        assert "## How to Navigate" in content
+        assert "## Tables" in content
+        assert "## Navigate" in content
 
-    def test_compile_embeds_concepts_in_navigation(self, db_engine, tmp_path):
-        """Small DB (<20 tables): concepts embedded in NAVIGATION.md, no concepts.json."""
+    def test_navigation_has_table_overview(self, db_engine, tmp_path):
+        """NAVIGATION.md has compact table overview with key columns."""
         catalog = SQLAlchemyCatalog(db_engine)
         book = catalog.introspect_all()
         compile_book(book, tmp_path)
 
-        # concepts.json should NOT exist for a 13-table DB
-        concepts_file = tmp_path / "concepts.json"
-        assert not concepts_file.exists(), (
-            "concepts.json should not be generated for small DBs (<20 tables)"
-        )
-
-        # Instead, concepts should be embedded in NAVIGATION.md
         nav_content = (tmp_path / "NAVIGATION.md").read_text()
-        assert "## Quick Lookup" in nav_content
-        # "email" concept should appear in the Quick Lookup table
+        assert "## Tables" in nav_content
+        # Table names should appear in the overview
+        assert "auth_users" in nav_content
+        assert "billing_orders" in nav_content
+        # Key columns should be visible
         assert "email" in nav_content.lower()
 
     def test_compile_creates_checksums_json(self, db_engine, tmp_path):
@@ -158,11 +154,10 @@ class TestCompileOutput:
         assert result["tables"] == 13
         assert result["schemas"] == 1  # "default" for SQLite
         # 2 root (NAVIGATION.md + checksums.json) + 1 manifest + 13 tables = 16
-        # (concepts.json is never generated — Quick Lookup is in NAVIGATION.md)
         assert result["files_written"] >= 15
 
-    def test_navigation_under_700_tokens(self, db_engine, tmp_path):
-        """NAVIGATION.md with embedded Quick Lookup stays compact."""
+    def test_navigation_under_400_tokens(self, db_engine, tmp_path):
+        """NAVIGATION.md with compact table overview stays small."""
         from tests.benchmark_helpers import count_tokens
 
         catalog = SQLAlchemyCatalog(db_engine)
@@ -171,7 +166,7 @@ class TestCompileOutput:
 
         nav = tmp_path / "NAVIGATION.md"
         tokens = count_tokens(nav.read_text())
-        # With Quick Lookup embedded (ALL terms for small DB), budget is higher but still compact
-        assert tokens < 1500, (
-            f"NAVIGATION.md is {tokens} tokens, should be < 1500"
+        # Compact table overview for 13 tables should be well under 450 tokens
+        assert tokens < 450, (
+            f"NAVIGATION.md is {tokens} tokens, should be < 450"
         )

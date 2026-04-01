@@ -36,8 +36,6 @@ class TestCLICompile:
 
         assert result["files_written"] >= 15
         assert (tmp_path / "NAVIGATION.md").exists()
-        # concepts.json is NOT generated for small DBs (<20 tables)
-        assert not (tmp_path / "concepts.json").exists()
         assert (tmp_path / "checksums.json").exists()
 
     def test_compile_cli_invocation(self, tmp_path):
@@ -326,10 +324,10 @@ class TestIncrementalCompile:
             tmp_path / "schemas" / "default" / "billing_discounts.md"
         ).exists()
 
-    def test_incremental_updates_navigation_and_concepts(
+    def test_incremental_updates_navigation(
         self, db_engine, tmp_path
     ):
-        """Incremental compile regenerates NAVIGATION.md (with embedded concepts) on changes."""
+        """Incremental compile regenerates NAVIGATION.md on changes."""
         catalog = SQLAlchemyCatalog(db_engine)
         book = catalog.introspect_all()
         for schema in book.schemas.values():
@@ -426,10 +424,10 @@ class TestIncrementalBenchmark:
 
         incremental_compile(book2, tmp_path, old_checksums)
 
-        # Verify Q1 still works — concepts are in NAVIGATION.md Quick Lookup
+        # Verify Q1 still works — email visible in NAVIGATION.md table overview
         agent = AgentSimulator(tmp_path)
         nav = agent.read_file("NAVIGATION.md")
-        assert "default" in nav.lower() or "Schema" in nav
+        assert "## Tables" in nav
         assert "email" in nav.lower()
 
         # Verify Q10 -- checksums updated

@@ -184,14 +184,13 @@ class TestLLMBenchmark:
 
         agent = AgentSimulator(tmp_path)
 
-        # With LLM summaries, concepts should have aliases
-        # For small DBs, concepts are in NAVIGATION.md Quick Lookup
+        # Table overview shows table names, so analytics_daily_revenue is visible
         nav_content = agent.read_file("NAVIGATION.md")
 
-        # "revenue" should be findable in Quick Lookup (from table name analytics_daily_revenue)
+        # "revenue" should be findable in table name in the overview
         revenue_found = "revenue" in nav_content.lower()
 
-        assert revenue_found, "Revenue concept should be findable in NAVIGATION.md Quick Lookup"
+        assert revenue_found, "Revenue table should be visible in NAVIGATION.md table overview"
 
     def test_concept_aliases_improve_discovery(self, db_engine, tmp_path):
         """Concept aliases should make more terms discoverable."""
@@ -246,7 +245,7 @@ class TestLLMBenchmark:
         enrich_book(book, provider)
         compile_book(book, tmp_path)
 
-        # Q1: Find email — concepts are in NAVIGATION.md for small DBs
+        # Q1: Find email — visible in NAVIGATION.md table overview Key Columns
         agent = AgentSimulator(tmp_path)
         nav_content = agent.read_file("NAVIGATION.md")
         assert "email" in nav_content.lower()
@@ -289,7 +288,7 @@ class TestLLMBenchmark:
             baseline_tokens=baseline,
         )
 
-        # Q1 — concepts are in NAVIGATION.md Quick Lookup for small DBs
+        # Q1 — email visible in NAVIGATION.md table overview Key Columns
         agent = AgentSimulator(tmp_path)
         nav = agent.read_file("NAVIGATION.md")
         found = "email" in nav.lower()
@@ -301,7 +300,7 @@ class TestLLMBenchmark:
             tokens_consumed=agent.tokens_consumed, answer_found=found,
         ))
 
-        # Q6 (revenue) — check NAVIGATION.md Quick Lookup
+        # Q6 (revenue) — check NAVIGATION.md table overview
         agent.reset()
         nav = agent.read_file("NAVIGATION.md")
         found_rev = "revenue" in nav.lower()

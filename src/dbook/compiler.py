@@ -10,7 +10,6 @@ from dbook.models import BookMeta
 from dbook.generators.navigation import generate_navigation
 from dbook.generators.manifest import generate_manifest
 from dbook.generators.table import generate_table
-from dbook.generators.concepts import generate_concepts
 from dbook.generators.checksums import generate_checksums
 
 logger = logging.getLogger(__name__)
@@ -71,14 +70,8 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
             if not table.summary:
                 table.summary = _mechanical_summary(table)
 
-    # Build concept index (needed for NAVIGATION.md Quick Lookup)
-    concepts_dict = generate_concepts(book)
-
-    # NAVIGATION.md (L0) — with inline Quick Lookup for all DB sizes
-    nav_content = generate_navigation(
-        book,
-        concepts=concepts_dict,
-    )
+    # NAVIGATION.md (L0) — compact table overview
+    nav_content = generate_navigation(book)
     (output / "NAVIGATION.md").write_text(nav_content)
     files_written += 1
     logger.info("Written NAVIGATION.md")

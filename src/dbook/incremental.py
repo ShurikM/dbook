@@ -11,7 +11,6 @@ from dbook.models import BookMeta
 from dbook.generators.navigation import generate_navigation
 from dbook.generators.manifest import generate_manifest
 from dbook.generators.table import generate_table
-from dbook.generators.concepts import generate_concepts
 from dbook.generators.checksums import generate_checksums
 
 logger = logging.getLogger(__name__)
@@ -153,14 +152,8 @@ def incremental_compile(
             files_written += 1
             logger.info(f"Updated manifest: {schema_name}")
 
-    # Build concept index for NAVIGATION.md Quick Lookup
-    concepts_dict = generate_concepts(book)
-
     # Regenerate NAVIGATION.md (always, since table counts/rows may have changed)
-    nav_content = generate_navigation(
-        book,
-        concepts=concepts_dict,
-    )
+    nav_content = generate_navigation(book)
     (output / "NAVIGATION.md").write_text(nav_content)
     files_written += 1
 

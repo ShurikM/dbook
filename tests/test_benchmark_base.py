@@ -49,10 +49,10 @@ class TestBenchmarkBase:
         """Q1: Where is user email stored?"""
         agent = AgentSimulator(compiled_book)
 
-        # Agent reads NAVIGATION.md (includes Quick Lookup for small DBs)
+        # Agent reads NAVIGATION.md (table overview with key columns)
         nav_content = agent.read_file("NAVIGATION.md")
 
-        # "email" should be findable in Quick Lookup
+        # "email" should be findable in Key Columns
         assert "email" in nav_content.lower()
 
         # Agent reads the table file for details
@@ -122,10 +122,10 @@ class TestBenchmarkBase:
         """Q9: Find all columns related to timestamps."""
         agent = AgentSimulator(compiled_book)
 
-        # For small DBs, concepts are in NAVIGATION.md Quick Lookup
+        # Table overview shows key columns per table
         nav_content = agent.read_file("NAVIGATION.md")
 
-        # Should find timestamp-related terms in Quick Lookup
+        # Should find timestamp-related terms in Key Columns
         timestamp_terms = [
             t
             for t in ("created", "updated", "at", "date", "expires")
@@ -146,12 +146,10 @@ class TestBenchmarkBase:
         assert agent.tokens_consumed > 0
 
     def test_token_savings_vs_baseline(self, compiled_book, baseline_tokens):
-        """Verify targeted query without concept lookup is cheaper than full DDL.
+        """Verify targeted query is cheaper than full DDL.
 
-        For a small DB (13 tables), NAVIGATION.md now includes the Quick
-        Lookup section, so reading it is heavier than before.  However,
-        a targeted single-table lookup (just reading the table file) should
-        still be significantly cheaper than dumping all DDL.
+        NAVIGATION.md with compact table overview is much smaller than DDL,
+        and a targeted single-table lookup is even cheaper.
         """
         agent = AgentSimulator(compiled_book)
 

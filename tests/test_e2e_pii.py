@@ -180,7 +180,7 @@ class TestPIIInCompiledOutput:
         compile_book(book, tmp_path)
 
         nav = (tmp_path / "NAVIGATION.md").read_text()
-        assert "Sensitivity" in nav, "NAVIGATION.md should have Sensitivity Overview"
+        assert "PII detected" in nav, "NAVIGATION.md should have PII summary line"
 
     def test_table_file_shows_pii_columns(self, db_engine, tmp_path):
         catalog = SQLAlchemyCatalog(db_engine)
@@ -216,9 +216,9 @@ class TestPIIInCompiledOutput:
         agent = AgentSimulator(tmp_path)
         nav = agent.read_file("NAVIGATION.md")
 
-        # Q5 should be answerable from the sensitivity overview in NAVIGATION.md
+        # Q5 should be answerable from the PII summary line in NAVIGATION.md
         # or from reading billing table files
-        has_sensitivity_info = "Sensitivity" in nav
+        has_sensitivity_info = "PII detected" in nav
 
         if not has_sensitivity_info:
             # Read billing tables directly
