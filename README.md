@@ -18,38 +18,37 @@ Our benchmarks show: **agents with raw DDL have only 76% of the facts needed for
 Connects to any database, introspects the schema, and generates structured metadata that gives agents the context DDL lacks:
 
 ```mermaid
-graph LR
-    DB[(Any Database)] -->|SQLAlchemy| I[Introspector]
-    I -->|Schema + Data| E{Enrichment}
-    E -->|Column Patterns| PII[PII Scanner]
-    E -->|SELECT DISTINCT| ENUM[Enum Detector]
-    E -->|FK Analysis| LIN[Lineage Builder]
-    E -->|Optional| LLM[LLM Enricher]
+graph TB
+    subgraph Agents["🤖 AI Agents"]
+        BA["Billing Agent"]
+        SA["Sales Agent"]
+        AA["Analytics Agent"]
+        CA["Support Agent"]
+    end
 
-    PII --> C[Compiler]
-    ENUM --> C
-    LIN --> C
-    LLM -.-> C
+    subgraph DBook["📖 dbook — compile once, all agents benefit"]
+        direction LR
+        EV["Enum Values\nstatus: pending, shipped, delivered"]
+        FK["FK Semantics\n→ users (the customer)"]
+        EQ["Example Queries\nSELECT ... JOIN ... WHERE"]
+        MT["Auto Metrics\nSUM(total) GROUP BY status"]
+        LN["Data Lineage\nsource → intermediate → leaf"]
+        PI["PII Detection\nemail ⚠ phone ⚠"]
+        QV["Query Validator\nSQLGlot: catches errors"]
+        TS["Token Savings\n~50% at 50+ tables"]
+    end
 
-    C --> NAV[NAVIGATION.md<br/>Table overview + lineage]
-    C --> TBL[Table .md files<br/>Columns, values, FKs,<br/>metrics, examples]
-    C --> MAN[_manifest.md<br/>Schema relationships]
+    subgraph DB["🗄️ Database (20–500 tables)"]
+        T1["users"] --- T2["orders"] --- T3["payments"]
+        T4["products"] --- T5["inventory"] --- T6["events"]
+    end
 
-    NAV --> AGENT[AI Agent]
-    TBL --> AGENT
-    MAN --> AGENT
+    Agents -->|"✅ Correct SQL (96%)"| DBook
+    DBook -->|"Introspect + Enrich"| DB
 
-    AGENT -->|Writes SQL| V[Query Validator<br/>SQLGlot]
-    V -->|Valid ✓| DB
-    V -->|Errors/Warnings| AGENT
-
-    style DB fill:#4a90d9,stroke:#2d6cb4,color:#fff
-    style AGENT fill:#22c55e,stroke:#16a34a,color:#fff
-    style V fill:#f59e0b,stroke:#d97706,color:#fff
-    style NAV fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style TBL fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style MAN fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style LLM fill:#64748b,stroke:#475569,color:#fff
+    style Agents fill:#0f172a,stroke:#22c55e,color:#e2e8f0
+    style DBook fill:#1e1b4b,stroke:#8b5cf6,color:#e2e8f0
+    style DB fill:#1e293b,stroke:#64748b,color:#94a3b8
 ```
 
 ```bash
@@ -107,50 +106,6 @@ result = validator.validate("SELECT * FROM orders WHERE status = 'completed'")
 ## Key Benchmark Results
 
 ### Agent Correctness: DDL vs dbook
-
-```mermaid
-graph TB
-    subgraph DDL["Raw DDL (76% facts)"]
-        D1[Table names ✓]
-        D2[Column names ✓]
-        D3[Column types ✓]
-        D4[FK references ✓]
-        D5["Enum values ✗"]
-        D6["Semantic meaning ✗"]
-        D7["Query patterns ✗"]
-        D8["Data lineage ✗"]
-        D9["PII markers ✗"]
-        D10["Metrics ✗"]
-    end
-
-    subgraph DBOOK["dbook (96% facts)"]
-        B1[Table names ✓]
-        B2[Column names ✓]
-        B3[Column types ✓]
-        B4[FK references ✓]
-        B5["Enum values ✓<br/>pending, shipped, delivered..."]
-        B6["FK semantics ✓<br/>→ users (the customer)"]
-        B7["Example queries ✓<br/>SELECT ... JOIN ... WHERE ..."]
-        B8["Data lineage ✓<br/>source → intermediate → leaf"]
-        B9["PII markers ✓<br/>EMAIL, PHONE, SSN"]
-        B10["Auto metrics ✓<br/>SUM(total) GROUP BY status"]
-    end
-
-    style DDL fill:#1e293b,stroke:#334155,color:#94a3b8
-    style DBOOK fill:#0f172a,stroke:#22c55e,color:#e2e8f0
-    style D5 fill:#ef4444,stroke:#dc2626,color:#fff
-    style D6 fill:#ef4444,stroke:#dc2626,color:#fff
-    style D7 fill:#ef4444,stroke:#dc2626,color:#fff
-    style D8 fill:#ef4444,stroke:#dc2626,color:#fff
-    style D9 fill:#ef4444,stroke:#dc2626,color:#fff
-    style D10 fill:#ef4444,stroke:#dc2626,color:#fff
-    style B5 fill:#22c55e,stroke:#16a34a,color:#fff
-    style B6 fill:#22c55e,stroke:#16a34a,color:#fff
-    style B7 fill:#22c55e,stroke:#16a34a,color:#fff
-    style B8 fill:#22c55e,stroke:#16a34a,color:#fff
-    style B9 fill:#22c55e,stroke:#16a34a,color:#fff
-    style B10 fill:#22c55e,stroke:#16a34a,color:#fff
-```
 
 Tested on an Amazon-like e-commerce database (34 tables, 15 business tasks, 4 agent types):
 
