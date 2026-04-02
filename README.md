@@ -2,6 +2,8 @@
 
 A database metadata compiler that makes AI agents understand your database — not just its structure, but its meaning.
 
+> **dbook** compiles your database schema into AI-ready metadata — enum values, semantic relationships, example queries, auto-detected metrics, data lineage, and PII markers. Agents with dbook write correct SQL 96% of the time vs 76% with raw DDL.
+
 ## The Problem
 
 AI agents writing SQL against databases fail because raw DDL lacks context:
@@ -14,6 +16,41 @@ Our benchmarks show: **agents with raw DDL have only 76% of the facts needed for
 ## What dbook Does
 
 Connects to any database, introspects the schema, and generates structured metadata that gives agents the context DDL lacks:
+
+```mermaid
+graph LR
+    DB[(Any Database)] -->|SQLAlchemy| I[Introspector]
+    I -->|Schema + Data| E{Enrichment}
+    E -->|Column Patterns| PII[PII Scanner]
+    E -->|SELECT DISTINCT| ENUM[Enum Detector]
+    E -->|FK Analysis| LIN[Lineage Builder]
+    E -->|Optional| LLM[LLM Enricher]
+
+    PII --> C[Compiler]
+    ENUM --> C
+    LIN --> C
+    LLM -.-> C
+
+    C --> NAV[NAVIGATION.md<br/>Table overview + lineage]
+    C --> TBL[Table .md files<br/>Columns, values, FKs,<br/>metrics, examples]
+    C --> MAN[_manifest.md<br/>Schema relationships]
+
+    NAV --> AGENT[AI Agent]
+    TBL --> AGENT
+    MAN --> AGENT
+
+    AGENT -->|Writes SQL| V[Query Validator<br/>SQLGlot]
+    V -->|Valid ✓| DB
+    V -->|Errors/Warnings| AGENT
+
+    style DB fill:#4a90d9,stroke:#2d6cb4,color:#fff
+    style AGENT fill:#22c55e,stroke:#16a34a,color:#fff
+    style V fill:#f59e0b,stroke:#d97706,color:#fff
+    style NAV fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style TBL fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style MAN fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style LLM fill:#64748b,stroke:#475569,color:#fff
+```
 
 ```bash
 pip install dbook
@@ -70,6 +107,50 @@ result = validator.validate("SELECT * FROM orders WHERE status = 'completed'")
 ## Key Benchmark Results
 
 ### Agent Correctness: DDL vs dbook
+
+```mermaid
+graph TB
+    subgraph DDL["Raw DDL (76% facts)"]
+        D1[Table names ✓]
+        D2[Column names ✓]
+        D3[Column types ✓]
+        D4[FK references ✓]
+        D5["Enum values ✗"]
+        D6["Semantic meaning ✗"]
+        D7["Query patterns ✗"]
+        D8["Data lineage ✗"]
+        D9["PII markers ✗"]
+        D10["Metrics ✗"]
+    end
+
+    subgraph DBOOK["dbook (96% facts)"]
+        B1[Table names ✓]
+        B2[Column names ✓]
+        B3[Column types ✓]
+        B4[FK references ✓]
+        B5["Enum values ✓<br/>pending, shipped, delivered..."]
+        B6["FK semantics ✓<br/>→ users (the customer)"]
+        B7["Example queries ✓<br/>SELECT ... JOIN ... WHERE ..."]
+        B8["Data lineage ✓<br/>source → intermediate → leaf"]
+        B9["PII markers ✓<br/>EMAIL, PHONE, SSN"]
+        B10["Auto metrics ✓<br/>SUM(total) GROUP BY status"]
+    end
+
+    style DDL fill:#1e293b,stroke:#334155,color:#94a3b8
+    style DBOOK fill:#0f172a,stroke:#22c55e,color:#e2e8f0
+    style D5 fill:#ef4444,stroke:#dc2626,color:#fff
+    style D6 fill:#ef4444,stroke:#dc2626,color:#fff
+    style D7 fill:#ef4444,stroke:#dc2626,color:#fff
+    style D8 fill:#ef4444,stroke:#dc2626,color:#fff
+    style D9 fill:#ef4444,stroke:#dc2626,color:#fff
+    style D10 fill:#ef4444,stroke:#dc2626,color:#fff
+    style B5 fill:#22c55e,stroke:#16a34a,color:#fff
+    style B6 fill:#22c55e,stroke:#16a34a,color:#fff
+    style B7 fill:#22c55e,stroke:#16a34a,color:#fff
+    style B8 fill:#22c55e,stroke:#16a34a,color:#fff
+    style B9 fill:#22c55e,stroke:#16a34a,color:#fff
+    style B10 fill:#22c55e,stroke:#16a34a,color:#fff
+```
 
 Tested on an Amazon-like e-commerce database (34 tables, 15 business tasks, 4 agent types):
 
@@ -167,17 +248,27 @@ print(result.valid, result.errors, result.warnings)
 
 ## The Silver Layer Insight
 
-Traditional data pipelines create gold layers because consumers can't read raw data:
-```
-Bronze (200 tables) → Silver (20 tables) → Gold (5 tables) → Consumer
-```
+Traditional data pipelines create gold layers because consumers can't read raw data. With dbook, AI agents can understand silver directly — the agent becomes the gold layer, building views on-demand for each question.
 
-With dbook, AI agents can understand silver directly:
-```
-Bronze (200 tables) → Silver (20 tables) → dbook → Agent queries silver
-```
+```mermaid
+graph LR
+    subgraph Traditional["Traditional Pipeline"]
+        TB[Bronze<br/>200 tables] -->|ETL| TS[Silver<br/>20 tables] -->|ETL| TG[Gold<br/>5 tables] --> TC[Consumer]
+    end
 
-The agent becomes the gold layer — building views on-demand for each question.
+    subgraph WithDbook["With dbook"]
+        WB[Bronze<br/>200 tables] -->|ETL| WS[Silver<br/>20 tables] -->|dbook compile| WD[dbook metadata] --> WA[AI Agent<br/>builds gold on-demand]
+    end
+
+    style TB fill:#cd7f32,stroke:#8b5a2b,color:#fff
+    style TS fill:#c0c0c0,stroke:#808080,color:#000
+    style TG fill:#ffd700,stroke:#b8860b,color:#000
+    style TC fill:#64748b,stroke:#475569,color:#fff
+    style WB fill:#cd7f32,stroke:#8b5a2b,color:#fff
+    style WS fill:#c0c0c0,stroke:#808080,color:#000
+    style WD fill:#8b5cf6,stroke:#7c3aed,color:#fff
+    style WA fill:#22c55e,stroke:#16a34a,color:#fff
+```
 
 ## Development
 
