@@ -26,25 +26,38 @@ Connects to any database, introspects the schema, and generates structured metad
 
 ```mermaid
 graph TB
-    subgraph WITHOUT["❌ Without dbook"]
-        A1["10 Agents"] -->|"Each reads ALL DDL"| D1["Database"]
-        A1 -->|"Guesses values"| W1["Wrong SQL"]
-        A1 -->|"No PII awareness"| W2["Compliance Risk"]
-        G["Gold Layer<br/>Manual ETL<br/>Goes stale"] --> A1
+    BA["🏦 Billing Agent"]
+    SA["🛒 Sales Agent"]
+    AA["📊 Analytics Agent"]
+    CA["🎧 Support Agent"]
+
+    BA --> DBOOK
+    SA --> DBOOK
+    AA --> DBOOK
+    CA --> DBOOK
+
+    subgraph DBOOK["📖 dbook"]
+        N1["✅ Enum Values — agents know valid WHERE clause values"]
+        N2["✅ FK Semantics — agents understand JOIN relationships"]
+        N3["✅ Example Queries — patterns agents can follow"]
+        N4["✅ Auto Metrics — SUM, COUNT, GROUP BY ready to use"]
+        N5["✅ Data Lineage — source → intermediate → leaf tables"]
+        N6["✅ PII Detection — sensitive columns marked and redacted"]
+        N7["✅ Query Validator — SQLGlot catches errors before execution"]
+        N8["✅ Token Savings — 50% fewer tokens at 50+ tables"]
     end
 
-    subgraph WITH["✅ With dbook"]
-        A2["10 Agents"] -->|"Read dbook metadata"| DB["dbook<br/>One compile"]
-        DB -->|"Enum values ✓<br/>FK semantics ✓<br/>Metrics ✓<br/>PII markers ✓<br/>Query validation ✓<br/>Lineage ✓"| D2["Database<br/>Silver layer"]
-        DB -->|"Schema changes<br/>auto-detected"| A2
-    end
+    DBOOK --> DB["🗄️ Silver Layer Database — 20-500 tables"]
 
-    style WITHOUT fill:#1a0000,stroke:#ef4444,color:#fca5a5
-    style WITH fill:#001a00,stroke:#22c55e,color:#bbf7d0
-    style G fill:#92400e,stroke:#f59e0b,color:#fef3c7
-    style DB fill:#4c1d95,stroke:#8b5cf6,color:#ede9fe
-    style W1 fill:#7f1d1d,stroke:#ef4444,color:#fca5a5
-    style W2 fill:#7f1d1d,stroke:#ef4444,color:#fca5a5
+    DBOOK -.-x GOLD["🚫 Gold Layer — no longer needed"]
+
+    style DBOOK fill:#1e1b4b,stroke:#8b5cf6,color:#e2e8f0
+    style DB fill:#1e293b,stroke:#475569,color:#94a3b8
+    style GOLD fill:#451a03,stroke:#f59e0b,color:#fde68a
+    style BA fill:#14532d,stroke:#22c55e,color:#bbf7d0
+    style SA fill:#14532d,stroke:#22c55e,color:#bbf7d0
+    style AA fill:#14532d,stroke:#22c55e,color:#bbf7d0
+    style CA fill:#14532d,stroke:#22c55e,color:#bbf7d0
 ```
 
 ```bash
