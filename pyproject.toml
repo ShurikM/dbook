@@ -7,7 +7,7 @@ name = "dbook"
 version = "0.1.0"
 description = "Database metadata compiler for AI agent consumption"
 readme = "README.md"
-license = "MIT"
+license = "Apache-2.0"
 requires-python = ">=3.11"
 dependencies = [
     "sqlalchemy>=2.0",

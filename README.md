@@ -1,102 +1,193 @@
 # dbook
 
-A metadata compiler that introspects databases and generates structured, token-efficient documentation for AI agent consumption.
+A database metadata compiler that makes AI agents understand your database — not just its structure, but its meaning.
 
 ## The Problem
 
-AI agents interacting with databases waste massive tokens consuming raw DDL/schema dumps. A 50-table database produces ~15,000 tokens of CREATE TABLE statements. Most of that is irrelevant to any given question.
+AI agents writing SQL against databases fail because raw DDL lacks context:
+- `status VARCHAR(20)` — what values are valid? (pending? active? 0/1/2?)
+- `total FLOAT` — gross or net? with tax? in dollars or cents?
+- `user_id INTEGER REFERENCES users(id)` — but what IS the relationship semantically?
 
-## The Solution
+Our benchmarks show: **agents with raw DDL have only 76% of the facts needed for correct SQL. With dbook: 96%.**
 
-dbook connects to your database, introspects the schema, and compiles a **layered, navigable directory of markdown files** — a "book" that agents can browse progressively:
+## What dbook Does
 
-```
-dbook_output/
-  NAVIGATION.md              # ~100 tokens: schema overview, quick reference
-  concepts.json              # term → table/column mapping for search
-  checksums.json             # schema hashes for change detection
-  schemas/
-    auth/
-      _manifest.md           # schema-level overview
-      users.md               # full table metadata
-      sessions.md
-    billing/
-      _manifest.md
-      orders.md
-      payments.md
-```
-
-An agent answering "where is user email stored?" reads **~150 tokens** (NAVIGATION.md + concepts.json + users.md) instead of **~15,000 tokens** (full DDL dump). That's **99% token savings**.
-
-## Features
-
-- **Progressive disclosure** — L0 catalog → L1 schema manifest → L2 table details → Ls concept index
-- **Database agnostic** — PostgreSQL, MySQL, SQLite, Snowflake, BigQuery via SQLAlchemy
-- **Schema change detection** — SHA256 hash per table; incremental recompilation of only changed tables
-- **PII detection** — Optional Microsoft Presidio integration marks sensitive columns and redacts sample data
-- **LLM enrichment** — Optional LLM pass generates semantic summaries, concept aliases, cross-table narratives
-- **Multiple interfaces** — Python library, CLI tool, MCP server, Claude Code skill
-
-## Quick Start
+Connects to any database, introspects the schema, and generates structured metadata that gives agents the context DDL lacks:
 
 ```bash
 pip install dbook
-
-# Compile your database into a dbook
 dbook compile "postgresql://user:pass@host/db" --output ./my_dbook
-
-# Check for schema changes
-dbook check ./my_dbook "postgresql://user:pass@host/db"
-
-# Incremental recompile (only changed tables)
-dbook compile "postgresql://user:pass@host/db" --output ./my_dbook --incremental
 ```
 
-## Optional Features
+### What agents get:
 
-```bash
-# PII detection + sample data redaction
-pip install dbook[pii]
-dbook compile "postgresql://..." --output ./my_dbook --pii
-
-# LLM-enriched semantic summaries
-pip install dbook[llm]
-dbook compile "postgresql://..." --output ./my_dbook --llm --llm-provider anthropic --llm-key sk-...
+**1. Enum value documentation** — auto-detected via `SELECT DISTINCT`
 ```
+status: pending, confirmed, shipped, delivered, cancelled
+method: credit_card, debit_card, paypal, bank_transfer
+```
+
+**2. Semantic FK descriptions** — agents understand relationships
+```
+→ users via user_id — the customer who placed this order
+← order_items.order_id — line items in this order
+```
+
+**3. Example queries** — patterns agents can follow
+```sql
+- By status: SELECT * FROM orders WHERE status IN ('pending', 'confirmed')
+- Revenue over time: SELECT DATE(created_at), SUM(total) FROM orders GROUP BY DATE(created_at)
+```
+
+**4. Auto-detected metrics** — common aggregations ready to use
+```
+- Total Amount: SELECT SUM(total) FROM orders
+- Count by Status: SELECT status, COUNT(*) FROM orders GROUP BY status
+- Amount over time: SELECT DATE(created_at), SUM(total) FROM orders GROUP BY DATE(created_at)
+```
+
+**5. Data lineage** — how tables connect in the data flow
+```
+Source tables: users, products (no dependencies)
+Intermediate: orders → depends on users | ← used by order_items, invoices
+Leaf: payments → depends on invoices
+```
+
+**6. PII detection** — marks sensitive columns, redacts sample data
+```
+| email | VARCHAR(255) | EMAIL (0.90) | high |
+| card_last_four | VARCHAR(4) | CREDIT_CARD_PARTIAL (0.70) | low |
+```
+
+**7. Query validation** — SQLGlot-powered, catches errors before execution
+```python
+validator = QueryValidator(book)
+result = validator.validate("SELECT * FROM orders WHERE status = 'completed'")
+# Warning: 'completed' not in known values: pending, confirmed, shipped, delivered, cancelled
+```
+
+## Key Benchmark Results
+
+### Agent Correctness: DDL vs dbook
+
+Tested on an Amazon-like e-commerce database (34 tables, 15 business tasks, 4 agent types):
+
+| Fact Type | Raw DDL | Base dbook | LLM dbook |
+|-----------|---------|-----------|-----------|
+| Structural (column names) | 100% | 100% | 100% |
+| Value-level (enum values) | 21% | 88% | 94% |
+| **Overall** | **76%** | **96%** | **98%** |
+
+**dbook adds +20% correctness** — the difference between agents that guess enum values and agents that know them.
+
+### On a 5-table database:
+- DDL key facts: 69% → dbook: 93% (+24% improvement)
+- dbook wins on 6 of 8 SQL tasks
+
+### Agent Discovery (business-term search):
+- 15 real business tasks (billing, sales, support, analytics agents)
+- All 3 modes achieve 15/15 success with mechanical aliases
+- Business terms like "shopping cart", "refund", "A/B test" correctly map to tables
+
+### Token Savings (at scale):
+- 50 tables: ~50% fewer tokens per query vs reading all DDL
+- Scales linearly — larger databases see larger savings
 
 ## Architecture
 
 ```
-Catalog Protocol (abstraction layer)
-    └── SQLAlchemyCatalog (default implementation)
-            └── SQLAlchemy Inspector (80% uniform cross-dialect)
-            └── Dialect-specific helpers (row counts, sizes, samples)
-
-BookMeta (introspected data) → Compiler → Markdown directory output
+SQLAlchemy Inspector → BookMeta → Compiler → Output Directory
+                                     ↓
+                      NAVIGATION.md    (table overview + lineage)
+                      schemas/
+                        {schema}/
+                          _manifest.md  (schema details + relationships)
+                          {table}.md    (columns, values, FKs, metrics, examples)
 ```
 
-The `Catalog` protocol allows future non-SQL sources (Unity Catalog, AWS Glue, Hive Metastore) without changing the compiler.
+### Catalog Protocol
+Database-agnostic via `Catalog` protocol. Default `SQLAlchemyCatalog` supports any SQLAlchemy-compatible database. DB type auto-detected from URL.
 
-## How Agents Use It
+### Supported Databases
+PostgreSQL, MySQL, SQLite, Snowflake, BigQuery — any database with a SQLAlchemy dialect.
 
-1. **Read NAVIGATION.md** (~100 tok) — get schema overview
-2. **Search concepts.json** (~50 tok) — find specific terms/columns
-3. **Read _manifest.md** (~200 tok) — schema-level detail
-4. **Read table.md** (~300 tok) — full table metadata
+## Usage
 
-Total per question: **~150-350 tokens** vs **~15,000 tokens** baseline.
+### Full compile
+```bash
+dbook compile "postgresql://user:pass@host/db" --output ./my_dbook
+```
 
-## Capability Matrix
+### With PII detection (marks sensitive columns, redacts sample data)
+```bash
+pip install dbook[pii]
+dbook compile "postgresql://..." --output ./my_dbook --pii
+```
 
-| Feature | Base | + Presidio | + LLM | + Both |
-|---------|------|-----------|-------|--------|
-| Schema structure | Full | Full | Full | Full |
-| Concept index | Mechanical | Mechanical | + Aliases/synonyms | + Aliases/synonyms |
-| Table summaries | Mechanical | Mechanical | Semantic | Semantic |
-| PII detection | - | Column names + sample data | - | Full |
-| Sample data redaction | - | Auto-redact | - | Auto-redact |
-| Cross-table narratives | - | - | Full | Full |
+### With LLM enrichment (semantic summaries, concept aliases)
+```bash
+pip install dbook[llm]
+dbook compile "postgresql://..." --output ./my_dbook --llm --llm-provider anthropic --llm-key sk-...
+```
+
+### Check for schema changes
+```bash
+dbook check ./my_dbook "postgresql://user:pass@host/db"
+```
+
+### Incremental recompile (only changed tables)
+```bash
+dbook compile "postgresql://..." --output ./my_dbook --incremental
+```
+
+### Python API
+```python
+from dbook.catalog import SQLAlchemyCatalog
+from dbook.compiler import compile_book
+from dbook.validator import QueryValidator
+
+# Compile
+catalog = SQLAlchemyCatalog("postgresql://user:pass@host/db")
+book = catalog.introspect_all()
+compile_book(book, "./my_dbook")
+
+# Validate agent SQL
+validator = QueryValidator(book)
+result = validator.validate("SELECT * FROM orders WHERE status = 'delivered'")
+print(result.valid, result.errors, result.warnings)
+```
+
+## Optional Features
+
+| Feature | Install | Flag | What it adds |
+|---------|---------|------|-------------|
+| PII detection | `pip install dbook[pii]` | `--pii` | Column sensitivity markers, sample data redaction |
+| LLM enrichment | `pip install dbook[llm]` | `--llm` | Semantic summaries, concept aliases, schema narratives |
+
+## The Silver Layer Insight
+
+Traditional data pipelines create gold layers because consumers can't read raw data:
+```
+Bronze (200 tables) → Silver (20 tables) → Gold (5 tables) → Consumer
+```
+
+With dbook, AI agents can understand silver directly:
+```
+Bronze (200 tables) → Silver (20 tables) → dbook → Agent queries silver
+```
+
+The agent becomes the gold layer — building views on-demand for each question.
+
+## Development
+
+```bash
+pip install -e ".[dev]"
+pytest tests/ -q --tb=short
+```
+
+118 tests covering: introspection, compilation, CLI, PII detection, LLM enrichment, query validation, and realistic agent simulation benchmarks.
 
 ## License
 
-MIT
+Apache License 2.0
