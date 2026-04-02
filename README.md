@@ -24,41 +24,9 @@ Raw DDL tells agents the structure — but not the meaning:
 
 Connects to any database, introspects the schema, and generates structured metadata that gives agents the context DDL lacks:
 
-```mermaid
-graph TB
-    BA["🏦 Billing Agent"]
-    SA["🛒 Sales Agent"]
-    AA["📊 Analytics Agent"]
-    CA["🎧 Support Agent"]
-
-    BA --> DBOOK
-    SA --> DBOOK
-    AA --> DBOOK
-    CA --> DBOOK
-
-    subgraph DBOOK["📖 dbook"]
-        N1["✅ Enum Values — agents know valid WHERE clause values"]
-        N2["✅ FK Semantics — agents understand JOIN relationships"]
-        N3["✅ Example Queries — patterns agents can follow"]
-        N4["✅ Auto Metrics — SUM, COUNT, GROUP BY ready to use"]
-        N5["✅ Data Lineage — source → intermediate → leaf tables"]
-        N6["✅ PII Detection — sensitive columns marked and redacted"]
-        N7["✅ Query Validator — SQLGlot catches errors before execution"]
-        N8["✅ Token Savings — 50% fewer tokens at 50+ tables"]
-    end
-
-    DBOOK --> DB["🗄️ Silver Layer Database — 20-500 tables"]
-
-    DBOOK -.-x GOLD["🚫 Gold Layer — no longer needed"]
-
-    style DBOOK fill:#1e1b4b,stroke:#8b5cf6,color:#e2e8f0
-    style DB fill:#1e293b,stroke:#475569,color:#94a3b8
-    style GOLD fill:#451a03,stroke:#f59e0b,color:#fde68a
-    style BA fill:#14532d,stroke:#22c55e,color:#bbf7d0
-    style SA fill:#14532d,stroke:#22c55e,color:#bbf7d0
-    style AA fill:#14532d,stroke:#22c55e,color:#bbf7d0
-    style CA fill:#14532d,stroke:#22c55e,color:#bbf7d0
-```
+<p align="center">
+  <img src="docs/architecture.svg" alt="dbook Architecture" width="800">
+</p>
 
 ```bash
 pip install dbook
