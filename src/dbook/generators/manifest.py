@@ -45,4 +45,11 @@ def generate_manifest(schema: SchemaMeta) -> str:
             lines.append(rel)
         lines.append("")
 
+    # Per-schema lineage section
+    from dbook.generators.lineage import generate_schema_lineage
+
+    lineage = generate_schema_lineage(schema)
+    if lineage:
+        lines.append(lineage)
+
     return "\n".join(lines)

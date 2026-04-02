@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dbook.generators.metrics import generate_metrics
 from dbook.models import BookMeta, TableMeta
 
 # --- Semantic FK description helpers ---
@@ -290,6 +291,15 @@ def generate_table(table: TableMeta, book: BookMeta | None = None) -> str:
         lines.append("")
         for ex in examples:
             lines.append(f"- {ex}")
+        lines.append("")
+
+    # Auto-detected Metrics
+    metrics = generate_metrics(table)
+    if metrics:
+        lines.append("## Metrics")
+        lines.append("")
+        for m in metrics:
+            lines.append(f"- {m}")
         lines.append("")
 
     # Sample Data — up to 5 rows with ALL columns, truncated at 40 chars

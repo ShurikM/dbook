@@ -83,8 +83,8 @@ class TestScaledBenchmark:
         """NAVIGATION.md with table overview stays compact even at 50 tables."""
         nav = compiled_scaled / "NAVIGATION.md"
         tokens = count_tokens(nav.read_text())
-        # Compact table overview for 50 tables (with Description column)
-        assert tokens < 3000, f"NAVIGATION.md is {tokens} tokens"
+        # Compact table overview + lineage for 50 tables
+        assert tokens < 4500, f"NAVIGATION.md is {tokens} tokens"
 
     def test_q1_find_email(self, compiled_scaled, scaled_baseline_tokens):
         """Q1: Where is user email stored? (via NAVIGATION.md table overview)"""

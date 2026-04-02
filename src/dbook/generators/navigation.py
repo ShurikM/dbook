@@ -152,6 +152,13 @@ def generate_navigation(book: BookMeta) -> str:
         lines.append(f"\u26a0 PII detected: {', '.join(parts)}")
         lines.append("")
 
+    # Lineage section
+    from dbook.generators.lineage import generate_lineage
+
+    lineage = generate_lineage(book)
+    if lineage:
+        lines.append(lineage)
+
     # Navigate instructions
     lines.append("## Navigate")
     lines.append("1. Scan the table above to find what you need")

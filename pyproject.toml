@@ -12,6 +12,7 @@ requires-python = ">=3.11"
 dependencies = [
     "sqlalchemy>=2.0",
     "click>=8.0",
+    "sqlglot>=20.0",
 ]
 
 [project.optional-dependencies]

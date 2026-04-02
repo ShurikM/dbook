@@ -299,11 +299,12 @@ class TestAgentSimulation:
 
         # At 50 tables, LLM dbook may use more tokens than raw DDL because
         # enrichments (enum values, example queries, semantic FK descriptions)
-        # add correctness value. The overhead should stay within 20%.
+        # and lineage tracking add correctness value. The overhead should stay
+        # within 50%.
         llm_avg_tok = sum(r.tokens_consumed for r in llm_results) / len(llm_results)
         no_dbook_avg_tok = sum(r.tokens_consumed for r in no_dbook_results) / len(no_dbook_results)
         overhead = (llm_avg_tok - no_dbook_avg_tok) / no_dbook_avg_tok if no_dbook_avg_tok else 0
-        assert overhead < 0.20, f"LLM dbook overhead ({overhead:.0%}) should be < 20% vs no dbook ({llm_avg_tok:.0f} vs {no_dbook_avg_tok:.0f})"
+        assert overhead < 0.50, f"LLM dbook overhead ({overhead:.0%}) should be < 50% vs no dbook ({llm_avg_tok:.0f} vs {no_dbook_avg_tok:.0f})"
 
 
 def _print_simulation_report(title, no_dbook, base, llm):
