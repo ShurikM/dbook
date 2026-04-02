@@ -6,12 +6,19 @@ A database metadata compiler that makes AI agents understand your database — n
 
 ## The Problem
 
-AI agents writing SQL against databases fail because raw DDL lacks context:
-- `status VARCHAR(20)` — what values are valid? (pending? active? 0/1/2?)
-- `total FLOAT` — gross or net? with tax? in dollars or cents?
-- `user_id INTEGER REFERENCES users(id)` — but what IS the relationship semantically?
+Your AI agents are **blind to your data**.
 
-Our benchmarks show: **agents with raw DDL have only 76% of the facts needed for correct SQL. With dbook: 96%.**
+Raw DDL tells agents the structure — but not the meaning:
+- `status VARCHAR(20)` — agents guess "active", "enabled", "1"... the real values are "pending", "shipped", "delivered"
+- `user_id INTEGER REFERENCES users(id)` — but what IS this relationship? The customer? The assignee? The creator?
+- Your gold layer exists because consumers couldn't read silver — but AI agents CAN, with the right metadata
+
+**The result:**
+- You maintain expensive gold layer ETL just for AI consumption
+- Every agent re-discovers the schema independently (10 agents = 10x cost)
+- Schema changes break agents silently — no one knows until production fails
+- Agents access PII columns unknowingly — compliance risk with every query
+- Agents guess enum values and write wrong SQL — silent data quality issues
 
 ## What dbook Does
 
@@ -19,36 +26,25 @@ Connects to any database, introspects the schema, and generates structured metad
 
 ```mermaid
 graph TB
-    subgraph Agents["🤖 AI Agents"]
-        BA["Billing Agent"]
-        SA["Sales Agent"]
-        AA["Analytics Agent"]
-        CA["Support Agent"]
+    subgraph WITHOUT["❌ Without dbook"]
+        A1["10 Agents"] -->|"Each reads ALL DDL"| D1["Database"]
+        A1 -->|"Guesses values"| W1["Wrong SQL"]
+        A1 -->|"No PII awareness"| W2["Compliance Risk"]
+        G["Gold Layer<br/>Manual ETL<br/>Goes stale"] --> A1
     end
 
-    subgraph DBook["📖 dbook — compile once, all agents benefit"]
-        direction LR
-        EV["Enum Values\nstatus: pending, shipped, delivered"]
-        FK["FK Semantics\n→ users (the customer)"]
-        EQ["Example Queries\nSELECT ... JOIN ... WHERE"]
-        MT["Auto Metrics\nSUM(total) GROUP BY status"]
-        LN["Data Lineage\nsource → intermediate → leaf"]
-        PI["PII Detection\nemail ⚠ phone ⚠"]
-        QV["Query Validator\nSQLGlot: catches errors"]
-        TS["Token Savings\n~50% at 50+ tables"]
+    subgraph WITH["✅ With dbook"]
+        A2["10 Agents"] -->|"Read dbook metadata"| DB["dbook<br/>One compile"]
+        DB -->|"Enum values ✓<br/>FK semantics ✓<br/>Metrics ✓<br/>PII markers ✓<br/>Query validation ✓<br/>Lineage ✓"| D2["Database<br/>Silver layer"]
+        DB -->|"Schema changes<br/>auto-detected"| A2
     end
 
-    subgraph DB["🗄️ Database (20–500 tables)"]
-        T1["users"] --- T2["orders"] --- T3["payments"]
-        T4["products"] --- T5["inventory"] --- T6["events"]
-    end
-
-    Agents -->|"✅ Correct SQL (96%)"| DBook
-    DBook -->|"Introspect + Enrich"| DB
-
-    style Agents fill:#0f172a,stroke:#22c55e,color:#e2e8f0
-    style DBook fill:#1e1b4b,stroke:#8b5cf6,color:#e2e8f0
-    style DB fill:#1e293b,stroke:#64748b,color:#94a3b8
+    style WITHOUT fill:#1a0000,stroke:#ef4444,color:#fca5a5
+    style WITH fill:#001a00,stroke:#22c55e,color:#bbf7d0
+    style G fill:#92400e,stroke:#f59e0b,color:#fef3c7
+    style DB fill:#4c1d95,stroke:#8b5cf6,color:#ede9fe
+    style W1 fill:#7f1d1d,stroke:#ef4444,color:#fca5a5
+    style W2 fill:#7f1d1d,stroke:#ef4444,color:#fca5a5
 ```
 
 ```bash

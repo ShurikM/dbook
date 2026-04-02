@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>dbook Architecture — Database Intelligence Layer for AI Agents</title>
+<title>dbook — Why Your AI Agents Need a Database Intelligence Layer</title>
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -16,7 +16,7 @@
   }
 
   .container {
-    max-width: 1100px;
+    max-width: 1200px;
     margin: 0 auto;
     padding: 40px 24px 60px;
   }
@@ -24,519 +24,405 @@
   /* ─── Header ─── */
   .header {
     text-align: center;
-    margin-bottom: 48px;
+    margin-bottom: 56px;
   }
 
   .header h1 {
-    font-size: 2.4rem;
+    font-size: 2.6rem;
     font-weight: 800;
     background: linear-gradient(135deg, #8b5cf6, #22c55e);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
-    margin-bottom: 8px;
+    margin-bottom: 12px;
     letter-spacing: -0.5px;
   }
 
   .header p {
-    font-size: 1.05rem;
+    font-size: 1.1rem;
     color: #94a3b8;
-    max-width: 600px;
+    max-width: 680px;
     margin: 0 auto;
-    line-height: 1.5;
+    line-height: 1.6;
   }
 
-  /* ─── Architecture Diagram ─── */
-  .architecture {
-    position: relative;
-    display: flex;
-    flex-direction: column;
-    gap: 0;
-    align-items: center;
-  }
-
-  /* ─── Layers ─── */
-  .layer {
-    width: 100%;
-    border-radius: 16px;
-    padding: 28px 32px;
-    position: relative;
-    z-index: 2;
-  }
-
-  .layer-label {
-    font-size: 0.7rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 16px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  /* ─── Agents Layer ─── */
-  .layer-agents {
-    background: linear-gradient(180deg, #0f172a 0%, #132218 100%);
-    border: 1.5px solid #22c55e40;
-  }
-
-  .layer-agents .layer-label { color: #22c55e; }
-
-  .agents-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  .agent-card {
-    background: #16a34a18;
-    border: 1px solid #22c55e30;
-    border-radius: 10px;
-    padding: 16px 12px;
-    text-align: center;
-    transition: all 0.3s ease;
-  }
-
-  .agent-card:hover {
-    background: #22c55e20;
-    border-color: #22c55e60;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px #22c55e15;
-  }
-
-  .agent-icon {
-    font-size: 1.6rem;
-    margin-bottom: 6px;
-    display: block;
-  }
-
-  .agent-name {
-    font-size: 0.82rem;
-    font-weight: 600;
+  .header p strong {
     color: #e2e8f0;
   }
 
-  .agent-desc {
-    font-size: 0.68rem;
-    color: #94a3b8;
-    margin-top: 4px;
-    line-height: 1.3;
-  }
-
-  .accuracy-badge {
-    text-align: center;
-    margin-top: 4px;
-  }
-
-  .accuracy-badge span {
-    display: inline-block;
-    background: #22c55e20;
-    color: #22c55e;
-    font-size: 0.78rem;
-    font-weight: 700;
-    padding: 4px 16px;
-    border-radius: 20px;
-    border: 1px solid #22c55e40;
-  }
-
-  /* ─── Connector pipes ─── */
-  .connector {
-    width: 100%;
-    height: 44px;
+  /* ─── Side-by-Side Comparison ─── */
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+    margin-bottom: 64px;
     position: relative;
-    z-index: 1;
+  }
+
+  .comparison-grid::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 56px;
+    height: 56px;
+    background: #0f1117;
+    border-radius: 50%;
+    border: 2px solid #334155;
     display: flex;
     align-items: center;
     justify-content: center;
-  }
-
-  .connector-line {
-    width: 2px;
-    height: 100%;
-    background: linear-gradient(180deg, transparent, #8b5cf650, transparent);
-    position: relative;
-  }
-
-  .connector-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: #8b5cf6;
-    position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    animation: flowDown 2s ease-in-out infinite;
-    box-shadow: 0 0 12px #8b5cf680;
-  }
-
-  .connector-up .connector-dot {
-    animation: flowUp 2s ease-in-out infinite;
-  }
-
-  @keyframes flowDown {
-    0% { top: -4px; opacity: 0; }
-    20% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { top: calc(100% - 4px); opacity: 0; }
-  }
-
-  @keyframes flowUp {
-    0% { top: calc(100% - 4px); opacity: 0; }
-    20% { opacity: 1; }
-    80% { opacity: 1; }
-    100% { top: -4px; opacity: 0; }
-  }
-
-  .connector-label {
-    position: absolute;
-    font-size: 0.68rem;
-    font-weight: 600;
-    color: #94a3b8;
-    white-space: nowrap;
-    left: calc(50% + 16px);
-  }
-
-  /* ─── dbook Layer ─── */
-  .layer-dbook {
-    background: linear-gradient(180deg, #1e1b4b 0%, #1a1145 100%);
-    border: 1.5px solid #8b5cf640;
-  }
-
-  .layer-dbook .layer-label { color: #a78bfa; }
-
-  .capabilities-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-    margin-bottom: 12px;
-  }
-
-  .capability {
-    background: #7c3aed15;
-    border: 1px solid #8b5cf625;
-    border-radius: 8px;
-    padding: 12px 10px;
-    text-align: center;
-    transition: all 0.3s ease;
-    position: relative;
-    cursor: default;
-  }
-
-  .capability:hover {
-    background: #8b5cf625;
-    border-color: #8b5cf650;
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px #8b5cf615;
-  }
-
-  .capability-icon {
-    font-size: 1.2rem;
-    margin-bottom: 4px;
-    display: block;
-  }
-
-  .capability-name {
-    font-size: 0.72rem;
-    font-weight: 600;
-    color: #c4b5fd;
-    line-height: 1.3;
-  }
-
-  .capability-detail {
-    font-size: 0.62rem;
-    color: #94a3b8;
-    margin-top: 3px;
-    line-height: 1.3;
-  }
-
-  /* Tooltip on hover */
-  .capability .tooltip {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    left: 50%;
-    transform: translateX(-50%);
-    background: #1e1b4bee;
-    border: 1px solid #8b5cf650;
-    border-radius: 8px;
-    padding: 10px 14px;
-    font-size: 0.7rem;
-    color: #e2e8f0;
-    line-height: 1.4;
-    width: 200px;
-    text-align: left;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    box-shadow: 0 12px 32px #0008;
     z-index: 10;
   }
 
-  .capability:hover .tooltip {
-    opacity: 1;
-  }
-
-  .dbook-tagline {
-    text-align: center;
-    font-size: 0.78rem;
-    color: #a78bfa;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-  }
-
-  /* ─── Database Layer ─── */
-  .layer-db {
-    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
-    border: 1.5px solid #64748b40;
-  }
-
-  .layer-db .layer-label { color: #64748b; }
-
-  .tables-grid {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
-  }
-
-  .table-chip {
-    background: #334155;
-    border: 1px solid #475569;
-    border-radius: 6px;
-    padding: 8px 14px;
-    font-size: 0.72rem;
-    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+  .comparison-arrow-icon {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 11;
+    font-size: 1.5rem;
     color: #94a3b8;
-    transition: all 0.2s ease;
-    position: relative;
-  }
-
-  .table-chip:hover {
-    border-color: #64748b;
-    color: #e2e8f0;
-  }
-
-  .table-chip .fk-arrow {
-    color: #64748b;
-    margin: 0 2px;
-  }
-
-  .db-stats {
-    font-size: 0.7rem;
-    color: #64748b;
-    display: flex;
-    gap: 20px;
-    margin-top: 4px;
-  }
-
-  .db-stats span { display: flex; align-items: center; gap: 4px; }
-
-  /* ─── Animated flow particles ─── */
-  .flow-particles {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
     pointer-events: none;
-    z-index: 0;
-    overflow: hidden;
   }
 
-  .particle {
-    position: absolute;
-    width: 4px;
-    height: 4px;
-    border-radius: 50%;
-    background: #8b5cf6;
-    box-shadow: 0 0 8px #8b5cf680;
-    animation: particleFloat 6s ease-in-out infinite;
-  }
-
-  .particle:nth-child(1) { left: 20%; animation-delay: 0s; }
-  .particle:nth-child(2) { left: 40%; animation-delay: 1.5s; }
-  .particle:nth-child(3) { left: 60%; animation-delay: 3s; }
-  .particle:nth-child(4) { left: 80%; animation-delay: 4.5s; }
-
-  @keyframes particleFloat {
-    0% { bottom: 0; opacity: 0; transform: scale(0.5); }
-    10% { opacity: 0.8; transform: scale(1); }
-    50% { opacity: 0.6; }
-    90% { opacity: 0.8; transform: scale(1); }
-    100% { bottom: 100%; opacity: 0; transform: scale(0.5); }
-  }
-
-  /* ─── Before/After Comparison ─── */
-  .comparison {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin: 48px 0 40px;
-  }
-
-  .comparison-card {
-    border-radius: 14px;
-    padding: 28px 24px;
-    text-align: center;
+  .side-panel {
+    border-radius: 20px;
+    padding: 32px 28px;
     position: relative;
     overflow: hidden;
   }
 
-  .comparison-card.without {
-    background: linear-gradient(135deg, #1e293b, #27161a);
+  .side-panel.pain {
+    background: linear-gradient(160deg, #1a0a0a 0%, #1f0d0d 60%, #1a1117 100%);
     border: 1.5px solid #ef444440;
   }
 
-  .comparison-card.with {
-    background: linear-gradient(135deg, #1e293b, #132218);
+  .side-panel.solution {
+    background: linear-gradient(160deg, #0a1a0e 0%, #0d1f12 60%, #111a1f 100%);
     border: 1.5px solid #22c55e40;
   }
 
-  .comparison-label {
-    font-size: 0.72rem;
+  .side-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pain .side-label { color: #ef4444; }
+  .solution .side-label { color: #22c55e; }
+
+  /* Agent cards in panels */
+  .panel-agents {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .panel-agent {
+    border-radius: 8px;
+    padding: 10px 12px;
+    text-align: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #e2e8f0;
+  }
+
+  .pain .panel-agent {
+    background: #7f1d1d18;
+    border: 1px solid #ef444420;
+  }
+
+  .solution .panel-agent {
+    background: #14532d18;
+    border: 1px solid #22c55e20;
+  }
+
+  .panel-agent-icon {
+    font-size: 1.2rem;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Problem/solution items */
+  .panel-items {
+    list-style: none;
+    margin: 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .panel-items li {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    animation: fadeSlideIn 0.6s ease forwards;
+    opacity: 0;
+  }
+
+  .panel-items li:nth-child(1) { animation-delay: 0.2s; }
+  .panel-items li:nth-child(2) { animation-delay: 0.35s; }
+  .panel-items li:nth-child(3) { animation-delay: 0.5s; }
+  .panel-items li:nth-child(4) { animation-delay: 0.65s; }
+  .panel-items li:nth-child(5) { animation-delay: 0.8s; }
+  .panel-items li:nth-child(6) { animation-delay: 0.95s; }
+  .panel-items li:nth-child(7) { animation-delay: 1.1s; }
+
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateX(-8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .solution .panel-items li {
+    animation-name: fadeSlideInRight;
+  }
+
+  @keyframes fadeSlideInRight {
+    from { opacity: 0; transform: translateX(8px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  .item-icon {
+    flex-shrink: 0;
+    font-size: 0.85rem;
+    margin-top: 1px;
+  }
+
+  .pain .item-icon { color: #ef4444; }
+  .solution .item-icon { color: #22c55e; }
+
+  .item-text {
+    color: #cbd5e1;
+  }
+
+  .item-text strong {
+    color: #e2e8f0;
+    font-weight: 600;
+  }
+
+  /* Result section in panel */
+  .panel-result {
+    margin-top: 20px;
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .pain .panel-result {
+    background: linear-gradient(135deg, #451a0330, #7f1d1d20);
+    border: 1px solid #ef444425;
+  }
+
+  .solution .panel-result {
+    background: linear-gradient(135deg, #052e1630, #14532d20);
+    border: 1px solid #22c55e25;
+  }
+
+  .panel-result-label {
+    font-size: 0.68rem;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
-    margin-bottom: 12px;
-  }
-
-  .comparison-card.without .comparison-label { color: #ef4444; }
-  .comparison-card.with .comparison-label { color: #22c55e; }
-
-  .comparison-percentage {
-    font-size: 3.2rem;
-    font-weight: 800;
-    line-height: 1;
-    margin-bottom: 8px;
-  }
-
-  .comparison-card.without .comparison-percentage { color: #ef4444; }
-  .comparison-card.with .comparison-percentage { color: #22c55e; }
-
-  .comparison-subtitle {
-    font-size: 0.78rem;
-    color: #94a3b8;
-    line-height: 1.4;
-  }
-
-  .comparison-detail {
-    font-size: 0.68rem;
-    color: #64748b;
-    margin-top: 10px;
-    line-height: 1.5;
-  }
-
-  .comparison-arrow {
-    position: absolute;
-    right: -12px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 1.5rem;
-    color: #64748b;
-    z-index: 3;
-  }
-
-  /* ─── Use Case Cards ─── */
-  .use-cases-header {
-    text-align: center;
-    margin-bottom: 24px;
-  }
-
-  .use-cases-header h2 {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: #e2e8f0;
-    margin-bottom: 6px;
-  }
-
-  .use-cases-header p {
-    font-size: 0.85rem;
-    color: #64748b;
-  }
-
-  .use-cases {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 16px;
-    margin-bottom: 40px;
-  }
-
-  .use-case {
-    background: #1e293b;
-    border: 1px solid #334155;
-    border-radius: 12px;
-    padding: 22px 20px;
-    transition: all 0.3s ease;
-  }
-
-  .use-case:hover {
-    border-color: #8b5cf650;
-    transform: translateY(-2px);
-    box-shadow: 0 8px 24px #0004;
-  }
-
-  .use-case-header {
-    display: flex;
-    align-items: center;
-    gap: 10px;
     margin-bottom: 10px;
-  }
-
-  .use-case-icon {
-    font-size: 1.4rem;
-    width: 36px;
-    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    border-radius: 8px;
-    flex-shrink: 0;
+    gap: 6px;
   }
 
-  .use-case:nth-child(1) .use-case-icon { background: #22c55e15; }
-  .use-case:nth-child(2) .use-case-icon { background: #3b82f615; }
-  .use-case:nth-child(3) .use-case-icon { background: #f59e0b15; }
-  .use-case:nth-child(4) .use-case-icon { background: #ef444415; }
+  .pain .panel-result-label { color: #f87171; }
+  .solution .panel-result-label { color: #4ade80; }
 
-  .use-case-title {
-    font-size: 0.85rem;
+  .panel-result-title {
+    font-size: 1rem;
     font-weight: 700;
     color: #e2e8f0;
+    margin-bottom: 4px;
   }
 
-  .use-case-task {
-    font-size: 0.75rem;
-    color: #a78bfa;
-    font-weight: 600;
-    margin-bottom: 6px;
-    font-style: italic;
-  }
-
-  .use-case-body {
-    font-size: 0.75rem;
+  .panel-result-desc {
+    font-size: 0.72rem;
+    line-height: 1.5;
     color: #94a3b8;
+  }
+
+  /* Silver layer boxes */
+  .panel-layer {
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: center;
+    margin-top: 12px;
+  }
+
+  .panel-layer-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #94a3b8;
+    margin-bottom: 2px;
+  }
+
+  .panel-layer-desc {
+    font-size: 0.62rem;
+    color: #64748b;
+  }
+
+  .pain .panel-layer {
+    background: #1e293b;
+    border: 1px solid #334155;
+  }
+
+  .solution .panel-layer {
+    background: #1e293b;
+    border: 1px solid #334155;
+  }
+
+  .panel-connector {
+    text-align: center;
+    font-size: 0.85rem;
+    color: #475569;
+    margin: 6px 0;
+  }
+
+  /* ─── Use Case Cards Section ─── */
+  .use-cases-section {
+    margin-bottom: 48px;
+  }
+
+  .use-cases-header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .use-cases-header h2 {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 8px;
+  }
+
+  .use-cases-header p {
+    font-size: 0.9rem;
+    color: #64748b;
+    max-width: 500px;
+    margin: 0 auto;
+  }
+
+  .use-cases-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 20px;
+  }
+
+  .use-case-card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 28px 24px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .use-case-card:hover {
+    border-color: #8b5cf650;
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px #0006;
+  }
+
+  .use-case-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .use-case-card:nth-child(1)::before { background: linear-gradient(90deg, #f59e0b, #f59e0b80); }
+  .use-case-card:nth-child(2)::before { background: linear-gradient(90deg, #8b5cf6, #8b5cf680); }
+  .use-case-card:nth-child(3)::before { background: linear-gradient(90deg, #ef4444, #ef444480); }
+  .use-case-card:nth-child(4)::before { background: linear-gradient(90deg, #3b82f6, #3b82f680); }
+  .use-case-card:nth-child(5)::before { background: linear-gradient(90deg, #22c55e, #22c55e80); }
+
+  .use-case-card-icon {
+    font-size: 1.6rem;
+    margin-bottom: 14px;
+    display: block;
+  }
+
+  .use-case-card-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #e2e8f0;
+    margin-bottom: 16px;
+  }
+
+  .use-case-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.78rem;
     line-height: 1.5;
   }
 
-  .use-case-body .dbook-helps {
-    color: #22c55e;
-    font-weight: 600;
+  .use-case-row:last-child {
+    margin-bottom: 0;
   }
 
-  .use-case-body code {
-    background: #0f172a;
+  .use-case-tag {
+    flex-shrink: 0;
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    margin-top: 2px;
+    height: fit-content;
+  }
+
+  .use-case-tag.before {
+    background: #7f1d1d30;
+    color: #f87171;
+    border: 1px solid #ef444430;
+  }
+
+  .use-case-tag.after {
+    background: #14532d30;
+    color: #4ade80;
+    border: 1px solid #22c55e30;
+  }
+
+  .use-case-tag.savings {
+    background: #1e1b4b30;
+    color: #a78bfa;
+    border: 1px solid #8b5cf630;
+  }
+
+  .use-case-desc {
+    color: #94a3b8;
+  }
+
+  .use-case-desc.savings-desc {
     color: #c4b5fd;
-    padding: 1px 5px;
-    border-radius: 3px;
-    font-size: 0.68rem;
-    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-weight: 600;
   }
 
   /* ─── Footer ─── */
   .footer {
     text-align: center;
-    padding-top: 20px;
+    padding-top: 24px;
     border-top: 1px solid #1e293b;
   }
 
@@ -545,15 +431,15 @@
     background: #8b5cf620;
     border: 1px solid #8b5cf640;
     border-radius: 8px;
-    padding: 10px 24px;
-    font-family: 'SF Mono', 'Fira Code', monospace;
-    font-size: 0.85rem;
+    padding: 12px 28px;
+    font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9rem;
     color: #c4b5fd;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .footer p {
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     color: #64748b;
   }
 
@@ -566,12 +452,16 @@
 
   /* ─── Responsive ─── */
   @media (max-width: 768px) {
-    .agents-grid { grid-template-columns: repeat(2, 1fr); }
-    .capabilities-grid { grid-template-columns: repeat(2, 1fr); }
-    .comparison { grid-template-columns: 1fr; }
-    .use-cases { grid-template-columns: 1fr; }
+    .comparison-grid {
+      grid-template-columns: 1fr;
+      gap: 20px;
+    }
+    .comparison-grid::after,
+    .comparison-arrow-icon { display: none; }
     .header h1 { font-size: 1.8rem; }
-    .comparison-arrow { display: none; }
+    .use-cases-grid { grid-template-columns: 1fr; }
+    .panel-agents { grid-template-columns: 1fr 1fr; }
+    .side-panel { padding: 24px 20px; }
   }
 </style>
 </head>
@@ -581,230 +471,232 @@
   <!-- Header -->
   <div class="header">
     <h1>dbook</h1>
-    <p>The intelligence layer between your database and AI agents. Compile once, all agents benefit.</p>
+    <p>Your AI agents are <strong>blind to your data</strong>. DDL tells them the structure, but not the meaning. dbook compiles the meaning so every agent writes correct SQL from day one.</p>
   </div>
 
-  <!-- Architecture Diagram -->
-  <div class="architecture">
-    <div class="flow-particles">
-      <div class="particle"></div>
-      <div class="particle"></div>
-      <div class="particle"></div>
-      <div class="particle"></div>
+  <!-- Side-by-Side Comparison -->
+  <div class="comparison-grid">
+    <div class="comparison-arrow-icon">&rarr;</div>
+
+    <!-- LEFT: Without dbook -->
+    <div class="side-panel pain">
+      <div class="side-label">
+        <span style="font-size: 1.1rem;">&#x2717;</span>
+        Without dbook
+      </div>
+
+      <div class="panel-agents">
+        <div class="panel-agent"><span class="panel-agent-icon">&#x1f4b3;</span> Billing</div>
+        <div class="panel-agent"><span class="panel-agent-icon">&#x1f4c8;</span> Sales</div>
+        <div class="panel-agent"><span class="panel-agent-icon">&#x1f4ca;</span> Analytics</div>
+        <div class="panel-agent"><span class="panel-agent-icon">&#x1f6e0;&#xfe0f;</span> Support</div>
+      </div>
+
+      <ul class="panel-items">
+        <li>
+          <span class="item-icon">&#x274c;</span>
+          <span class="item-text"><strong>Reads ALL DDL</strong> per query (wasteful tokens)</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x274c;</span>
+          <span class="item-text"><strong>Guesses enum values</strong> &mdash; writes WHERE status = 'complete' (wrong!)</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x274c;</span>
+          <span class="item-text"><strong>Guesses JOIN paths</strong> &mdash; no FK semantics = wrong self-joins</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x274c;</span>
+          <span class="item-text"><strong>No PII awareness</strong> &mdash; queries email, SSN unknowingly</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x274c;</span>
+          <span class="item-text"><strong>No schema change detection</strong> &mdash; column renamed = silent failures</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x274c;</span>
+          <span class="item-text"><strong>Can't read silver layer</strong> &mdash; needs a gold layer built for it</span>
+        </li>
+      </ul>
+
+      <div class="panel-connector">&darr; So you build...</div>
+
+      <div class="panel-result">
+        <div class="panel-result-label">
+          <span>&#x1f6a8;</span> Gold Layer Required
+        </div>
+        <div class="panel-result-title">Manual ETL Pipeline</div>
+        <div class="panel-result-desc">Goes stale. Expensive to maintain. Exists only because agents can't understand silver.</div>
+      </div>
+
+      <div class="panel-connector">&darr;</div>
+
+      <div class="panel-layer">
+        <div class="panel-layer-label">Silver Layer (20 tables)</div>
+        <div class="panel-layer-desc">Agents can't use this directly</div>
+      </div>
     </div>
 
-    <!-- Top: AI Agents -->
-    <div class="layer layer-agents">
-      <div class="layer-label">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
-        AI Agents
+    <!-- RIGHT: With dbook -->
+    <div class="side-panel solution">
+      <div class="side-label">
+        <span style="font-size: 1.1rem;">&#x2713;</span>
+        With dbook
       </div>
-      <div class="agents-grid">
-        <div class="agent-card">
-          <span class="agent-icon">&#x1f4b3;</span>
-          <div class="agent-name">Billing Agent</div>
-          <div class="agent-desc">Payment processing, refunds, invoicing</div>
-        </div>
-        <div class="agent-card">
-          <span class="agent-icon">&#x1f4c8;</span>
-          <div class="agent-name">Sales Agent</div>
-          <div class="agent-desc">Inventory, orders, customer accounts</div>
-        </div>
-        <div class="agent-card">
-          <span class="agent-icon">&#x1f4ca;</span>
-          <div class="agent-name">Analytics Agent</div>
-          <div class="agent-desc">Revenue, segments, trends, KPIs</div>
-        </div>
-        <div class="agent-card">
-          <span class="agent-icon">&#x1f6e0;&#xfe0f;</span>
-          <div class="agent-name">Support Agent</div>
-          <div class="agent-desc">Customer lookup, ticket resolution</div>
-        </div>
-      </div>
-      <div class="accuracy-badge">
-        <span>Correct SQL: 96%</span>
-      </div>
-    </div>
 
-    <!-- Connector: Agents to dbook -->
-    <div class="connector">
-      <div class="connector-line" style="height: 44px;">
-        <div class="connector-dot" style="animation-delay: 0s;"></div>
-        <div class="connector-dot" style="animation-delay: 1s;"></div>
+      <div class="panel-agents">
+        <div class="panel-agent"><span class="panel-agent-icon">&#x1f4b3;</span> Billing</div>
+        <div class="panel-agent"><span class="panel-agent-icon">&#x1f4c8;</span> Sales</div>
+        <div class="panel-agent"><span class="panel-agent-icon">&#x1f4ca;</span> Analytics</div>
+        <div class="panel-agent"><span class="panel-agent-icon">&#x1f6e0;&#xfe0f;</span> Support</div>
       </div>
-      <span class="connector-label">Enriched Metadata</span>
-    </div>
 
-    <!-- Middle: dbook -->
-    <div class="layer layer-dbook">
-      <div class="layer-label">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-        dbook &mdash; Database Intelligence Layer
-      </div>
-      <div class="capabilities-grid">
-        <div class="capability">
-          <div class="tooltip">Auto-discovers valid column values via SELECT DISTINCT. Agents know status = 'pending' | 'shipped' | 'delivered' instead of guessing.</div>
-          <span class="capability-icon">&#x1f3af;</span>
-          <div class="capability-name">Enum Values</div>
-          <div class="capability-detail">SELECT DISTINCT</div>
-        </div>
-        <div class="capability">
-          <div class="tooltip">Adds human-readable meaning to foreign keys. Not just orders.user_id -> users.id, but "the customer who placed this order".</div>
-          <span class="capability-icon">&#x1f517;</span>
-          <div class="capability-name">FK Semantics</div>
-          <div class="capability-detail">Relationship meaning</div>
-        </div>
-        <div class="capability">
-          <div class="tooltip">Generates ready-to-use SQL patterns agents can follow. Correct JOINs, filters, and aggregations by example.</div>
-          <span class="capability-icon">&#x1f4dd;</span>
-          <div class="capability-name">Example Queries</div>
-          <div class="capability-detail">Reusable SQL patterns</div>
-        </div>
-        <div class="capability">
-          <div class="tooltip">Auto-detects common aggregations: SUM, COUNT, AVG on numeric columns. GROUP BY on categoricals. Ready-made metrics.</div>
-          <span class="capability-icon">&#x1f4cf;</span>
-          <div class="capability-name">Auto Metrics</div>
-          <div class="capability-detail">SUM, COUNT, GROUP BY</div>
-        </div>
-        <div class="capability">
-          <div class="tooltip">Maps how tables connect in data flow: source tables (no deps), intermediate (both), and leaf tables (endpoints).</div>
-          <span class="capability-icon">&#x1f5fa;&#xfe0f;</span>
-          <div class="capability-name">Data Lineage</div>
-          <div class="capability-detail">Source to leaf mapping</div>
-        </div>
-        <div class="capability">
-          <div class="tooltip">Pattern-based detection of emails, phones, SSNs, credit cards. Marks sensitivity levels and redacts sample data.</div>
-          <span class="capability-icon">&#x1f6e1;&#xfe0f;</span>
-          <div class="capability-name">PII Detection</div>
-          <div class="capability-detail">Email, phone, SSN</div>
-        </div>
-        <div class="capability">
-          <div class="tooltip">SQLGlot-powered validation catches errors before execution. Warns about invalid enum values, bad joins, missing tables.</div>
-          <span class="capability-icon">&#x2705;</span>
-          <div class="capability-name">Query Validator</div>
-          <div class="capability-detail">SQLGlot pre-check</div>
-        </div>
-        <div class="capability">
-          <div class="tooltip">Agents read only relevant table metadata instead of full DDL. 50+ tables = ~50% token reduction per query.</div>
-          <span class="capability-icon">&#x26a1;</span>
-          <div class="capability-name">Token Savings</div>
-          <div class="capability-detail">~50% at 50+ tables</div>
-        </div>
-      </div>
-      <div class="dbook-tagline">One compile &rarr; All agents benefit</div>
-    </div>
+      <ul class="panel-items">
+        <li>
+          <span class="item-icon">&#x2705;</span>
+          <span class="item-text"><strong>Token-efficient navigation</strong> &mdash; reads only relevant tables</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x2705;</span>
+          <span class="item-text"><strong>Known enum values</strong> &mdash; writes WHERE status = 'completed' (correct!)</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x2705;</span>
+          <span class="item-text"><strong>Semantic FK relationships</strong> &mdash; correct JOINs, first try</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x2705;</span>
+          <span class="item-text"><strong>PII marked &amp; redacted</strong> &mdash; agents respect sensitivity</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x2705;</span>
+          <span class="item-text"><strong>Schema changes auto-detected</strong> &mdash; incremental recompile</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x2705;</span>
+          <span class="item-text"><strong>Query validation (SQLGlot)</strong> &mdash; catches errors before execution</span>
+        </li>
+        <li>
+          <span class="item-icon">&#x2705;</span>
+          <span class="item-text"><strong>Auto metrics &amp; lineage</strong> &mdash; ready-made aggregations</span>
+        </li>
+      </ul>
 
-    <!-- Connector: dbook to DB -->
-    <div class="connector connector-up">
-      <div class="connector-line" style="height: 44px;">
-        <div class="connector-dot" style="animation-delay: 0.5s;"></div>
-        <div class="connector-dot" style="animation-delay: 1.5s;"></div>
-      </div>
-      <span class="connector-label">Introspect + Enrich</span>
-    </div>
+      <div class="panel-connector">&darr; No gold layer needed</div>
 
-    <!-- Bottom: Database -->
-    <div class="layer layer-db">
-      <div class="layer-label">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-        Database
+      <div class="panel-result">
+        <div class="panel-result-label">
+          <span>&#x1f4d6;</span> dbook
+        </div>
+        <div class="panel-result-title">One Compile Command</div>
+        <div class="panel-result-desc">Always current. Agents query silver directly, building "gold" views on-demand for each question.</div>
       </div>
-      <div class="tables-grid">
-        <div class="table-chip">users</div>
-        <div class="table-chip"><span class="fk-arrow">&rarr;</span> orders</div>
-        <div class="table-chip"><span class="fk-arrow">&rarr;</span> order_items</div>
-        <div class="table-chip">payments</div>
-        <div class="table-chip">shipments</div>
-        <div class="table-chip">products</div>
-        <div class="table-chip">inventory</div>
-        <div class="table-chip">categories</div>
-        <div class="table-chip">events</div>
-        <div class="table-chip">reviews</div>
-        <div class="table-chip" style="color:#64748b; border-style: dashed;">+ more...</div>
-      </div>
-      <div class="db-stats">
-        <span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
-          20&ndash;500 tables
-        </span>
-        <span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M3 3h18v18H3z"/><path d="M3 9h18"/><path d="M9 3v18"/></svg>
-          Multiple schemas
-        </span>
-        <span>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
-          Complex relationships
-        </span>
-      </div>
-    </div>
-  </div>
 
-  <!-- Before/After Comparison -->
-  <div class="comparison">
-    <div class="comparison-card without">
-      <div class="comparison-label">Without dbook</div>
-      <div class="comparison-percentage">76%</div>
-      <div class="comparison-subtitle">Key facts available to agents</div>
-      <div class="comparison-detail">
-        Raw DDL only. Agents guess enum values, miss relationship semantics, produce wrong JOINs and invalid WHERE clauses.
-      </div>
-      <div class="comparison-arrow">&rarr;</div>
-    </div>
-    <div class="comparison-card with">
-      <div class="comparison-label">With dbook</div>
-      <div class="comparison-percentage">96%</div>
-      <div class="comparison-subtitle">Key facts available to agents</div>
-      <div class="comparison-detail">
-        Enriched metadata. Agents know exact enum values, understand relationships, follow query patterns. Correct SQL first try.
+      <div class="panel-connector">&darr;</div>
+
+      <div class="panel-layer">
+        <div class="panel-layer-label">Silver Layer (20 tables)</div>
+        <div class="panel-layer-desc">Agents use this directly via dbook</div>
       </div>
     </div>
   </div>
 
   <!-- Use Case Cards -->
-  <div class="use-cases-header">
-    <h2>How Agents Use dbook</h2>
-    <p>Real scenarios where enriched metadata makes the difference</p>
-  </div>
+  <div class="use-cases-section">
+    <div class="use-cases-header">
+      <h2>Five Problems dbook Eliminates</h2>
+      <p>Real scenarios with before/after comparisons</p>
+    </div>
 
-  <div class="use-cases">
-    <div class="use-case">
-      <div class="use-case-header">
-        <div class="use-case-icon">&#x1f4b3;</div>
-        <div class="use-case-title">Billing Agent</div>
+    <div class="use-cases-grid">
+      <!-- Card 1: Gold Layer -->
+      <div class="use-case-card">
+        <span class="use-case-card-icon">&#x1f3d7;&#xfe0f;</span>
+        <div class="use-case-card-title">Eliminate Gold Layer Maintenance</div>
+        <div class="use-case-row">
+          <span class="use-case-tag before">Before</span>
+          <span class="use-case-desc">Build and maintain 5 gold tables so dashboards and agents can read data. ETL breaks, aggregations go stale, engineers firefight.</span>
+        </div>
+        <div class="use-case-row">
+          <span class="use-case-tag after">After</span>
+          <span class="use-case-desc"><code>dbook compile</code> &rarr; agents query silver directly, build "gold" on-demand for each question.</span>
+        </div>
+        <div class="use-case-row">
+          <span class="use-case-tag savings">Saved</span>
+          <span class="use-case-desc savings-desc">No ETL pipeline for gold. No stale aggregations. No maintenance burden.</span>
+        </div>
       </div>
-      <div class="use-case-task">"Process a refund for order #4821"</div>
-      <div class="use-case-body">
-        <span class="dbook-helps">dbook provides:</span> payment <code>status</code> enum values (<code>pending</code>, <code>completed</code>, <code>refunded</code>). Agent writes correct <code>WHERE status = 'completed'</code> filter on first try instead of guessing <code>'paid'</code> or <code>'success'</code>.
+
+      <!-- Card 2: Compile Once -->
+      <div class="use-case-card">
+        <span class="use-case-card-icon">&#x1f4e6;</span>
+        <div class="use-case-card-title">Compile Once, All Agents Benefit</div>
+        <div class="use-case-row">
+          <span class="use-case-tag before">Before</span>
+          <span class="use-case-desc">10 agents each introspect the schema independently. 10x the cost, 10x the token usage, 10x the latency.</span>
+        </div>
+        <div class="use-case-row">
+          <span class="use-case-tag after">After</span>
+          <span class="use-case-desc">One <code>dbook compile</code> &rarr; shared metadata &rarr; all 10 agents consume the same enriched context.</span>
+        </div>
+        <div class="use-case-row">
+          <span class="use-case-tag savings">Saved</span>
+          <span class="use-case-desc savings-desc">Schema introspection cost reduced by 10x. ~50% token savings per query at scale.</span>
+        </div>
       </div>
-    </div>
-    <div class="use-case">
-      <div class="use-case-header">
-        <div class="use-case-icon">&#x1f4c8;</div>
-        <div class="use-case-title">Sales Agent</div>
+
+      <!-- Card 3: Schema Changes -->
+      <div class="use-case-card">
+        <span class="use-case-card-icon">&#x1f504;</span>
+        <div class="use-case-card-title">Schema Changes Never Break Agents</div>
+        <div class="use-case-row">
+          <span class="use-case-tag before">Before</span>
+          <span class="use-case-desc">Column renamed, table dropped, enum value added. Agents write wrong SQL. Errors in production. Nobody knows until a dashboard is empty.</span>
+        </div>
+        <div class="use-case-row">
+          <span class="use-case-tag after">After</span>
+          <span class="use-case-desc"><code>dbook check</code> detects changes &rarr; <code>dbook compile --incremental</code> &rarr; agents always have current metadata.</span>
+        </div>
+        <div class="use-case-row">
+          <span class="use-case-tag savings">Saved</span>
+          <span class="use-case-desc savings-desc">Zero silent failures from schema drift. Changes detected before they break anything.</span>
+        </div>
       </div>
-      <div class="use-case-task">"Check warehouse inventory for SKU-7392"</div>
-      <div class="use-case-body">
-        <span class="dbook-helps">dbook provides:</span> FK semantics showing <code>inventory.warehouse_id</code> &rarr; <code>warehouses</code> (the storage location). Agent generates correct JOIN path across 3 tables instead of wrong self-join.
+
+      <!-- Card 4: PII Safety -->
+      <div class="use-case-card">
+        <span class="use-case-card-icon">&#x1f6e1;&#xfe0f;</span>
+        <div class="use-case-card-title">PII Safety by Default</div>
+        <div class="use-case-row">
+          <span class="use-case-tag before">Before</span>
+          <span class="use-case-desc">Agent queries <code>users.email</code>, <code>users.ssn</code> unknowingly. Compliance violation. Data leaked in logs, responses, or downstream systems.</span>
+        </div>
+        <div class="use-case-row">
+          <span class="use-case-tag after">After</span>
+          <span class="use-case-desc">dbook marks PII columns with sensitivity levels. Agents know what's sensitive before querying. Sample data redacted.</span>
+        </div>
+        <div class="use-case-row">
+          <span class="use-case-tag savings">Saved</span>
+          <span class="use-case-desc savings-desc">Compliance risk eliminated at the metadata layer, not the application layer.</span>
+        </div>
       </div>
-    </div>
-    <div class="use-case">
-      <div class="use-case-header">
-        <div class="use-case-icon">&#x1f4ca;</div>
-        <div class="use-case-title">Analytics Agent</div>
-      </div>
-      <div class="use-case-task">"Revenue breakdown by customer segment"</div>
-      <div class="use-case-body">
-        <span class="dbook-helps">dbook provides:</span> auto-detected metrics: <code>SUM(total)</code> <code>GROUP BY segment</code>. Plus example queries showing the exact join from orders through customers to segments. Instant, correct query.
-      </div>
-    </div>
-    <div class="use-case">
-      <div class="use-case-header">
-        <div class="use-case-icon">&#x1f6e0;&#xfe0f;</div>
-        <div class="use-case-title">Support Agent</div>
-      </div>
-      <div class="use-case-task">"Look up customer jane@example.com"</div>
-      <div class="use-case-body">
-        <span class="dbook-helps">dbook provides:</span> PII markers on <code>email</code> (sensitivity: high) and <code>phone</code> (sensitivity: medium). Agent knows to redact sensitive fields in responses and limit data exposure.
+
+      <!-- Card 5: Correct SQL -->
+      <div class="use-case-card">
+        <span class="use-case-card-icon">&#x1f3af;</span>
+        <div class="use-case-card-title">Correct SQL from Day One</div>
+        <div class="use-case-row">
+          <span class="use-case-tag before">Before</span>
+          <span class="use-case-desc">Agent writes <code>WHERE status = 'complete'</code>. Wrong! The real value is <code>'completed'</code>. Silent data quality issues &mdash; query returns 0 rows, nobody notices.</span>
+        </div>
+        <div class="use-case-row">
+          <span class="use-case-tag after">After</span>
+          <span class="use-case-desc">dbook enumerates values &rarr; agent writes <code>WHERE status = 'completed'</code>. SQLGlot validator catches remaining errors before execution.</span>
+        </div>
+        <div class="use-case-row">
+          <span class="use-case-tag savings">Saved</span>
+          <span class="use-case-desc savings-desc">Value-level correctness jumps from 21% to 94%. No more silent wrong results.</span>
+        </div>
       </div>
     </div>
   </div>
