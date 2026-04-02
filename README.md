@@ -182,25 +182,9 @@ print(result.valid, result.errors, result.warnings)
 
 Traditional data pipelines create gold layers because consumers can't read raw data. With dbook, AI agents can understand silver directly — the agent becomes the gold layer, building views on-demand for each question.
 
-```mermaid
-graph LR
-    subgraph Traditional["Traditional Pipeline"]
-        TB[Bronze<br/>200 tables] -->|ETL| TS[Silver<br/>20 tables] -->|ETL| TG[Gold<br/>5 tables] --> TC[Consumer]
-    end
-
-    subgraph WithDbook["With dbook"]
-        WB[Bronze<br/>200 tables] -->|ETL| WS[Silver<br/>20 tables] -->|dbook compile| WD[dbook metadata] --> WA[AI Agent<br/>builds gold on-demand]
-    end
-
-    style TB fill:#cd7f32,stroke:#8b5a2b,color:#fff
-    style TS fill:#c0c0c0,stroke:#808080,color:#000
-    style TG fill:#ffd700,stroke:#b8860b,color:#000
-    style TC fill:#64748b,stroke:#475569,color:#fff
-    style WB fill:#cd7f32,stroke:#8b5a2b,color:#fff
-    style WS fill:#c0c0c0,stroke:#808080,color:#000
-    style WD fill:#8b5cf6,stroke:#7c3aed,color:#fff
-    style WA fill:#22c55e,stroke:#16a34a,color:#fff
-```
+<p align="center">
+  <img src="docs/silver-layer.svg" alt="The Silver Layer Insight" width="800">
+</p>
 
 ## Development
 
