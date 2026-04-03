@@ -31,7 +31,8 @@ def main():
 @click.option("--llm", is_flag=True, help="Enable LLM enrichment (requires dbook[llm])")
 @click.option("--llm-provider", default=None, help="LLM provider: anthropic, openai, gemini")
 @click.option("--llm-key", default=None, help="LLM API key")
-def compile(database_url, output, schemas, incremental, sample_rows, no_sample_data, no_row_count, pii, llm, llm_provider, llm_key):
+@click.option("--metrics", default=None, type=click.Path(), help="Path to metrics.yaml with user-defined metric definitions")
+def compile(database_url, output, schemas, incremental, sample_rows, no_sample_data, no_row_count, pii, llm, llm_provider, llm_key, metrics):
     """Compile database metadata into a dbook directory.
 
     DATABASE_URL is a SQLAlchemy connection string (e.g., postgresql://user:pass@host/db).
@@ -122,7 +123,7 @@ def compile(database_url, output, schemas, incremental, sample_rows, no_sample_d
             from dbook.incremental import incremental_compile
             old_checksums = json.loads(checksums_file.read_text())
             click.echo("Running incremental compile...")
-            result = incremental_compile(book, output_path, old_checksums)
+            result = incremental_compile(book, output_path, old_checksums)  # noqa: metrics not supported for incremental yet
             elapsed_compile = time.monotonic() - start
             click.echo(f"Incremental compile complete ({elapsed_compile:.1f}s):")
             click.echo(f"  Added: {len(result.added)}")
@@ -132,11 +133,11 @@ def compile(database_url, output, schemas, incremental, sample_rows, no_sample_d
             click.echo(f"  Files written: {result.files_written}")
         else:
             click.echo("No existing checksums found. Running full compile...")
-            result = compile_book(book, output_path)
+            result = compile_book(book, output_path, metrics_file=metrics)
             elapsed_compile = time.monotonic() - start
             click.echo(f"Full compile: {result['files_written']} files written ({elapsed_compile:.1f}s)")
     else:
-        result = compile_book(book, output_path)
+        result = compile_book(book, output_path, metrics_file=metrics)
         elapsed_compile = time.monotonic() - start
         click.echo(f"Compiled {result['tables']} tables across {result['schemas']} schema(s)")
         click.echo(f"  Files written: {result['files_written']}")

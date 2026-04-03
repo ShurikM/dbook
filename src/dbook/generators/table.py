@@ -162,7 +162,7 @@ def _estimate_table_tokens(table: TableMeta) -> int:
 
 # --- Main generator ---
 
-def generate_table(table: TableMeta, book: BookMeta | None = None) -> str:
+def generate_table(table: TableMeta, book: BookMeta | None = None, user_metrics: list | None = None) -> str:
     """Generate table .md content."""
     lines: list[str] = []
 
@@ -301,6 +301,16 @@ def generate_table(table: TableMeta, book: BookMeta | None = None) -> str:
         for m in metrics:
             lines.append(f"- {m}")
         lines.append("")
+
+    # User-defined business metrics (from metrics.yaml)
+    if user_metrics:
+        table_metrics = [m for m in user_metrics if table.name in m.tables]
+        if table_metrics:
+            lines.append("## Business Metrics (user-defined)")
+            lines.append("")
+            for m in table_metrics:
+                lines.append(f"- **{m.name}**: `{m.sql}` -- {m.description}")
+            lines.append("")
 
     # Sample Data — up to 5 rows with ALL columns, truncated at 40 chars
     if table.sample_data:

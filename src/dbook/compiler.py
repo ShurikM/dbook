@@ -15,7 +15,7 @@ from dbook.generators.checksums import generate_checksums
 logger = logging.getLogger(__name__)
 
 
-def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
+def compile_book(book: BookMeta, output_dir: str | Path, metrics_file: str | Path | None = None) -> dict:
     """Compile a BookMeta into a layered markdown directory.
 
     Output structure:
@@ -34,6 +34,8 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
         The introspected database metadata.
     output_dir : str | Path
         Directory to write output files.
+    metrics_file : str | Path | None
+        Optional path to a metrics.yaml with user-defined metric definitions.
 
     Returns
     -------
@@ -70,8 +72,17 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
             if not table.summary:
                 table.summary = _mechanical_summary(table)
 
+    # Load user-defined metrics
+    from dbook.metrics import MetricDefinition, load_metrics
+
+    user_metrics: list[MetricDefinition] = []
+    if metrics_file:
+        user_metrics = load_metrics(metrics_file)
+        if user_metrics:
+            logger.info(f"Loaded {len(user_metrics)} user-defined metrics from {metrics_file}")
+
     # NAVIGATION.md (L0) — compact table overview
-    nav_content = generate_navigation(book)
+    nav_content = generate_navigation(book, user_metrics=user_metrics)
     (output / "NAVIGATION.md").write_text(nav_content)
     files_written += 1
     logger.info("Written NAVIGATION.md")
@@ -98,7 +109,7 @@ def compile_book(book: BookMeta, output_dir: str | Path) -> dict:
 
         # Per-table .md (L2)
         for table_name, table in sorted(schema.tables.items()):
-            table_content = generate_table(table, book)
+            table_content = generate_table(table, book, user_metrics=user_metrics)
             (schema_dir / f"{table_name}.md").write_text(table_content)
             files_written += 1
             tables_written += 1

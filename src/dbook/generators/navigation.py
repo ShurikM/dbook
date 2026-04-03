@@ -108,13 +108,18 @@ def _mechanical_description(table: TableMeta) -> str:
     return desc
 
 
-def generate_navigation(book: BookMeta) -> str:
+def generate_navigation(
+    book: BookMeta,
+    user_metrics: list | None = None,
+) -> str:
     """Generate NAVIGATION.md content from BookMeta.
 
     Parameters
     ----------
     book : BookMeta
         The introspected database metadata.
+    user_metrics : list | None
+        Optional list of MetricDefinition objects from metrics.yaml.
     """
     lines = []
     total_tables = sum(len(s.tables) for s in book.schemas.values())
@@ -158,6 +163,16 @@ def generate_navigation(book: BookMeta) -> str:
     lineage = generate_lineage(book)
     if lineage:
         lines.append(lineage)
+
+    # User-defined business metrics
+    if user_metrics:
+        lines.append("## Business Metrics (user-defined)")
+        lines.append("")
+        lines.append("| Metric | SQL | Description |")
+        lines.append("|--------|-----|-------------|")
+        for metric in user_metrics:
+            lines.append(f"| {metric.name} | `{metric.sql}` | {metric.description} |")
+        lines.append("")
 
     # Navigate instructions
     lines.append("## Navigate")

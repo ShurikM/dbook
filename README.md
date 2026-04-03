@@ -2,7 +2,7 @@
 
 A database metadata compiler that makes AI agents understand your database — not just its structure, but its meaning.
 
-> **dbook** compiles your database schema into AI-ready metadata — enum values, semantic relationships, example queries, auto-detected metrics, data lineage, and PII markers. Agents with dbook write correct SQL 96% of the time vs 76% with raw DDL.
+> **dbook** compiles your database schema into AI-ready metadata — enum values, semantic relationships, example queries, auto-detected metrics, data lineage, and PII markers. Agents with dbook have 96% of the key facts needed for correct SQL vs 76% with raw DDL.
 
 ## The Problem
 
@@ -90,13 +90,13 @@ Tested on an Amazon-like e-commerce database (34 tables, 15 business tasks, 4 ag
 |-----------|---------|-----------|-----------|
 | Structural (column names) | 100% | 100% | 100% |
 | Value-level (enum values) | 21% | 88% | 94% |
-| **Overall** | **76%** | **96%** | **98%** |
+| **Overall key fact coverage** | **76%** | **96%** | **98%** |
 
-**dbook adds +20% correctness** — the difference between agents that guess enum values and agents that know them.
+**dbook adds +20% key fact coverage** — the difference between agents that guess enum values and agents that know them.
 
 ### On a 5-table database:
-- DDL key facts: 69% → dbook: 93% (+24% improvement)
-- dbook wins on 6 of 8 SQL tasks
+- DDL key fact coverage: 69% -> dbook: 93% (+24% improvement)
+- SQL execution benchmark (MockSQLGenerator simulating LLM behavior) shows dbook produces more executable, correct SQL than raw DDL context
 
 ### Agent Discovery (business-term search):
 - 15 real business tasks (billing, sales, support, analytics agents)
@@ -177,14 +177,21 @@ print(result.valid, result.errors, result.warnings)
 |---------|---------|------|-------------|
 | PII detection | `pip install dbook[pii]` | `--pii` | Column sensitivity markers, sample data redaction |
 | LLM enrichment | `pip install dbook[llm]` | `--llm` | Semantic summaries, concept aliases, schema narratives |
+| Metrics | `pip install dbook[metrics]` | `--metrics` | User-defined canonical business metrics |
 
 ## The Silver Layer Insight
 
-Traditional data pipelines create gold layers because consumers can't read raw data. With dbook, AI agents can understand silver directly — the agent becomes the gold layer, building views on-demand for each question.
+Traditional data pipelines create gold layers because consumers can't read raw data. With dbook, AI agents can understand silver directly — reducing the need for gold views for discovery and ad-hoc queries.
 
 <p align="center">
   <img src="docs/silver-layer.svg" alt="The Silver Layer Insight" width="800">
 </p>
+
+> **Note:** dbook reduces the need for gold views for discovery and ad-hoc queries.
+> Gold layers still provide value for: enforced business rules, canonical metric
+> definitions, data quality guarantees, and grain standardization. For critical metrics,
+> define them in `metrics.yaml` — dbook includes them in its output so agents use the
+> canonical definition, not their own interpretation.
 
 ## Development
 

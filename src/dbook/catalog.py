@@ -53,6 +53,15 @@ class SQLAlchemyCatalog:
         self._inspector = inspect(self.engine)
         self.dialect = self.engine.dialect.name
 
+    def clear_cache(self) -> None:
+        """Reset the SQLAlchemy inspector cache.
+
+        Call this before re-introspecting when the underlying schema may have
+        changed (e.g. ALTER TABLE).  Without this, the inspector returns stale
+        column / index metadata from its internal cache.
+        """
+        self._inspector = inspect(self.engine)
+
     @property
     def sanitized_url(self) -> str:
         """URL with password masked."""
@@ -257,6 +266,8 @@ class SQLAlchemyCatalog:
         schema: str | None,
         columns: list[ColumnInfo],
         row_count: int | None,
+        max_cardinality: int = 50,
+        max_table_rows: int = 100_000,
     ) -> dict[str, list[str]]:
         """Detect enum-like columns and query their distinct values.
 
@@ -265,7 +276,16 @@ class SQLAlchemyCatalog:
         - Boolean columns
         - VARCHAR/TEXT with short max length patterns
 
-        Only on tables with < 100K rows. Max 20 distinct values per column.
+        Performs a cheap cardinality pre-check (COUNT(DISTINCT col)) before
+        fetching actual values to avoid expensive full scans on high-cardinality
+        columns.
+
+        Parameters
+        ----------
+        max_cardinality:
+            Skip columns with more distinct values than this (default 50).
+        max_table_rows:
+            Skip the table entirely when row_count exceeds this (default 100 000).
         """
         ENUM_PATTERNS = {  # noqa: N806
             "status", "type", "category", "priority", "level", "role",
@@ -273,7 +293,7 @@ class SQLAlchemyCatalog:
             "gender", "variant", "mode", "phase", "grade", "stage",
         }
 
-        if row_count and row_count > 100000:
+        if row_count and row_count > max_table_rows:
             return {}
 
         enum_values: dict[str, list[str]] = {}
@@ -289,15 +309,40 @@ class SQLAlchemyCatalog:
             if not is_enum_like:
                 continue
 
+            qualified = self._qualified_name(table_name, schema)
+
+            # Cardinality pre-check — cheap COUNT(DISTINCT) to avoid
+            # expensive full table scans on high-cardinality columns.
             try:
-                qualified = self._qualified_name(table_name, schema)
                 with self.engine.connect() as conn:
-                    result = conn.execute(text(
+                    stmt = text(
+                        f'SELECT COUNT(DISTINCT "{col.name}") FROM {qualified}'  # noqa: S608
+                    ).execution_options(timeout=5)
+                    count_result = conn.execute(stmt)
+                    cardinality = count_result.scalar()
+                    if cardinality is None or cardinality > max_cardinality:
+                        logger.debug(
+                            "Skipping %s.%s: cardinality %s > %s",
+                            table_name, col.name, cardinality, max_cardinality,
+                        )
+                        continue
+            except Exception:
+                logger.debug(
+                    "Cardinality pre-check failed for %s.%s — skipping",
+                    table_name, col.name,
+                )
+                continue
+
+            # Now safe to fetch actual distinct values.
+            try:
+                with self.engine.connect() as conn:
+                    stmt = text(
                         f'SELECT DISTINCT "{col.name}" FROM {qualified}'  # noqa: S608
-                        f' WHERE "{col.name}" IS NOT NULL LIMIT 20'
-                    ))
+                        f' WHERE "{col.name}" IS NOT NULL LIMIT {max_cardinality}'
+                    ).execution_options(timeout=5)
+                    result = conn.execute(stmt)
                     values = sorted([str(row[0]) for row in result if row[0] is not None])
-                    if values and len(values) <= 20:
+                    if values and len(values) <= max_cardinality:
                         enum_values[col.name] = values
             except Exception as e:
                 logger.debug("Failed to get enum values for %s.%s: %s", table_name, col.name, e)

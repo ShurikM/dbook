@@ -22,6 +22,7 @@ snowflake = ["snowflake-sqlalchemy"]
 bigquery = ["sqlalchemy-bigquery"]
 pii = ["presidio-analyzer", "presidio-anonymizer"]
 llm = ["anthropic", "openai"]
+metrics = ["pyyaml"]
 dev = [
     "pytest>=7.0",
     "tiktoken",

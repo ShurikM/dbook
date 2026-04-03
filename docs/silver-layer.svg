@@ -120,14 +120,14 @@
 
   <!-- Benefits -->
   <rect x="440" y="292" width="350" height="38" rx="6" fill="#052e16" stroke="#166534" stroke-width="1"/>
-  <text x="615" y="307" text-anchor="middle" fill="#86efac" font-size="10">&#x2705; No gold maintenance &#xB7; &#x2705; Always current</text>
+  <text x="615" y="307" text-anchor="middle" fill="#86efac" font-size="10">&#x2705; Less gold maintenance &#xB7; &#x2705; Always current</text>
   <text x="615" y="321" text-anchor="middle" fill="#86efac" font-size="10">&#x2705; Any question answered &#xB7; &#x2705; 96% correctness</text>
 
   <!-- Crossed out Gold -->
   <rect x="40" y="295" width="120" height="35" rx="6" fill="#1c1917" stroke="#7f1d1d" stroke-width="1" stroke-dasharray="4,3"/>
   <text x="100" y="313" text-anchor="middle" fill="#78716c" font-size="11" text-decoration="line-through">Gold Layer</text>
-  <text x="100" y="326" text-anchor="middle" fill="#57534e" font-size="9">not needed</text>
+  <text x="100" y="326" text-anchor="middle" fill="#57534e" font-size="9">reduced</text>
 
   <!-- Footer -->
-  <text x="450" y="362" text-anchor="middle" fill="#64748b" font-size="10">dbook compile "postgresql://..." &#x2192; agents understand silver &#x2192; gold layer eliminated</text>
+  <text x="450" y="362" text-anchor="middle" fill="#64748b" font-size="10">dbook compile "postgresql://..." &#x2192; agents understand silver &#x2192; gold layer reduced</text>
 </svg>
