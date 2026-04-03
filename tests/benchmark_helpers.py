@@ -7,19 +7,9 @@ from pathlib import Path
 
 
 def count_tokens(text: str) -> int:
-    """Count tokens using agentlib's chunker if available, else tiktoken, else estimate."""
-    try:
-        from agentlib.lib.chunker import count_tokens as _agentlib_count  # type: ignore[import-untyped]
-        return _agentlib_count(text)
-    except ImportError:
-        pass
-    try:
-        import tiktoken  # type: ignore[import-untyped]
-        enc = tiktoken.get_encoding("cl100k_base")
-        return len(enc.encode(text))
-    except ImportError:
-        # Rough estimate: 1 token ~ 4 chars for English text
-        return len(text) // 4
+    """Count tokens using agentlib's chunker."""
+    from lib.chunker import count_tokens as _agentlib_count  # type: ignore[import-untyped]
+    return _agentlib_count(text)
 
 
 @dataclass

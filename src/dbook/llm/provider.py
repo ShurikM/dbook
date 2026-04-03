@@ -5,8 +5,7 @@ client that supports Anthropic, OpenAI, Google, xAI, and DeepSeek.  dbook
 wraps it with a stable ``LLMProvider`` protocol so that the rest of the
 codebase (enricher, CLI, tests) stays unchanged.
 
-When agentlib is not installed, dbook falls back to its own built-in
-provider implementations.
+agentlib is a hard dependency — if it is not installed, dbook will not work.
 """
 
 from __future__ import annotations
@@ -15,36 +14,10 @@ import json
 import logging
 from typing import Protocol, runtime_checkable
 
+from lib.llm import call_llm as _agentlib_call_llm  # type: ignore[import-untyped]
+from lib.llm import LLMConfig as _AgentlibLLMConfig  # type: ignore[import-untyped]
+
 logger = logging.getLogger(__name__)
-
-# ---------------------------------------------------------------------------
-# Try to import agentlib's LLM layer
-# ---------------------------------------------------------------------------
-_AGENTLIB_AVAILABLE = False
-
-try:
-    from agentlib.lib.llm import call_llm as _agentlib_call_llm  # type: ignore[import-untyped]
-    from agentlib.lib.llm import LLMConfig as _AgentlibLLMConfig  # type: ignore[import-untyped]
-    _AGENTLIB_AVAILABLE = True
-    logger.debug("agentlib LLM layer available — using it as the foundation")
-except ImportError:
-    from dataclasses import dataclass as _dataclass
-
-    @_dataclass
-    class _AgentlibLLMConfig:  # type: ignore[no-redef]
-        """Stub used only when agentlib is not installed."""
-        provider: str = ""
-        model: str = ""
-        api_key: str | None = None
-        base_url: str | None = None
-
-    def _agentlib_call_llm(  # type: ignore[no-redef]  # noqa: ARG001
-        config: _AgentlibLLMConfig, prompt: str, *, max_tokens: int = 1024,
-        images: list[tuple[str, str]] | None = None,
-    ) -> str:
-        raise RuntimeError("agentlib is not installed")
-
-    logger.debug("agentlib not available — using built-in providers")
 
 
 # ---------------------------------------------------------------------------
@@ -61,7 +34,7 @@ class LLMProvider(Protocol):
 
 
 # ---------------------------------------------------------------------------
-# agentlib-backed provider (preferred when agentlib is installed)
+# agentlib-backed provider (the primary provider)
 # ---------------------------------------------------------------------------
 
 class AgentlibProvider:
@@ -252,106 +225,19 @@ class MockProvider:
 
 
 # ---------------------------------------------------------------------------
-# Built-in fallback providers (used when agentlib is not installed)
-# ---------------------------------------------------------------------------
-
-class _AnthropicProvider:
-    """Anthropic Claude provider (built-in fallback)."""
-
-    def __init__(self, api_key: str, model: str = "claude-haiku-4-5-20251001"):
-        self.api_key = api_key
-        self.model = model
-
-    def complete(self, prompt: str, max_tokens: int = 500) -> str:
-        try:
-            import anthropic  # type: ignore[import-untyped]
-            client = anthropic.Anthropic(api_key=self.api_key)
-            response = client.messages.create(
-                model=self.model,
-                max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return response.content[0].text
-        except ImportError:
-            raise ImportError("anthropic package required. Install with: pip install anthropic")
-
-
-class _OpenAIProvider:
-    """OpenAI provider (built-in fallback)."""
-
-    def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
-        self.api_key = api_key
-        self.model = model
-
-    def complete(self, prompt: str, max_tokens: int = 500) -> str:
-        try:
-            import openai  # type: ignore[import-untyped]  # pyright: ignore[reportMissingImports]
-            client = openai.OpenAI(api_key=self.api_key)
-            response = client.chat.completions.create(
-                model=self.model,
-                max_tokens=max_tokens,
-                messages=[{"role": "user", "content": prompt}],
-            )
-            return response.choices[0].message.content or ""
-        except ImportError:
-            raise ImportError("openai package required. Install with: pip install openai")
-
-
-class _GeminiProvider:
-    """Google Gemini provider (built-in fallback)."""
-
-    def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):
-        self.api_key = api_key
-        self.model = model
-
-    def complete(self, prompt: str, max_tokens: int = 500) -> str:
-        try:
-            import requests
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/{self.model}:generateContent"
-            response = requests.post(
-                url,
-                params={"key": self.api_key},
-                json={"contents": [{"parts": [{"text": prompt}]}],
-                       "generationConfig": {"maxOutputTokens": max_tokens}},
-                timeout=30,
-            )
-            response.raise_for_status()
-            data = response.json()
-            return data["candidates"][0]["content"]["parts"][0]["text"]
-        except ImportError:
-            raise ImportError("requests package required for Gemini provider")
-
-
-# ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
 
 def create_provider(provider_name: str, api_key: str, model: str | None = None) -> LLMProvider:
     """Factory to create a provider by name.
 
-    When agentlib is installed, real providers use agentlib's unified
-    ``call_llm`` under the hood.  When it is not, dbook's built-in
-    fallback implementations are used instead.
+    Uses agentlib's unified ``call_llm`` for all real providers.
+    MockProvider is available for testing without API keys.
     """
     if provider_name == "mock":
         return MockProvider()
 
-    # Use agentlib when available for real providers
-    if _AGENTLIB_AVAILABLE and provider_name in ("anthropic", "openai", "gemini", "google", "xai", "deepseek"):
+    if provider_name in ("anthropic", "openai", "gemini", "google", "xai", "deepseek"):
         return AgentlibProvider(provider=provider_name, api_key=api_key, model=model)
 
-    # Fallback to built-in implementations
-    _fallback_providers = {
-        "anthropic": _AnthropicProvider,
-        "openai": _OpenAIProvider,
-        "gemini": _GeminiProvider,
-    }
-
-    if provider_name not in _fallback_providers:
-        raise ValueError(f"Unknown provider '{provider_name}'. Available: {list(_fallback_providers.keys())}")
-
-    cls = _fallback_providers[provider_name]
-    kwargs: dict = {"api_key": api_key}
-    if model:
-        kwargs["model"] = model
-    return cls(**kwargs)
+    raise ValueError(f"Unknown provider '{provider_name}'. Available: anthropic, openai, gemini, google, xai, deepseek, mock")

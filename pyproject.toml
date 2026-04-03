@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Database metadata compiler for AI agent consumption"
 readme = "README.md"
 license = "Apache-2.0"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 authors = [
     {name = "Shurik M", email = "shurik@example.com"},
 ]
@@ -17,7 +17,6 @@ classifiers = [
     "Intended Audience :: Developers",
     "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Topic :: Database",
     "Topic :: Software Development :: Libraries",
@@ -27,6 +26,7 @@ dependencies = [
     "sqlalchemy>=2.0",
     "click>=8.0",
     "sqlglot>=20.0",
+    "agentlib @ git+https://github.com/barkain/agentlib.git",
 ]
 
 [project.optional-dependencies]
@@ -38,7 +38,6 @@ pii = ["presidio-analyzer", "presidio-anonymizer"]
 llm = ["anthropic", "openai"]
 metrics = ["pyyaml"]
 embeddings = ["sentence-transformers"]
-agentlib = ["agentlib @ git+https://github.com/barkain/agentlib.git"]
 dev = [
     "pytest>=7.0",
     "tiktoken",

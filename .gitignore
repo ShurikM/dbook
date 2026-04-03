@@ -8,5 +8,6 @@ build/
 .ruff_cache/
 *.egg
 .claude/
+.venv/
 uv.lock
 REPORT.html
