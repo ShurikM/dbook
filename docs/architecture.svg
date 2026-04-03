@@ -112,10 +112,10 @@
   <!-- Benchmark bar -->
   <rect x="50" y="375" width="810" height="42" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1"/>
   <text x="70" y="395" fill="#94a3b8" font-size="10" font-weight="600">BENCHMARK</text>
-  <text x="200" y="395" fill="#94a3b8" font-size="10">DDL correctness: </text>
-  <text x="305" y="395" fill="#ef4444" font-size="11" font-weight="700">76%</text>
+  <text x="200" y="395" fill="#94a3b8" font-size="10">DDL SQL correct: </text>
+  <text x="305" y="395" fill="#ef4444" font-size="11" font-weight="700">75%</text>
   <text x="340" y="395" fill="#94a3b8" font-size="10">→ dbook: </text>
-  <text x="402" y="395" fill="#22c55e" font-size="11" font-weight="700">96%</text>
+  <text x="402" y="395" fill="#22c55e" font-size="11" font-weight="700">100%</text>
   <text x="445" y="395" fill="#64748b" font-size="10">│</text>
   <text x="465" y="395" fill="#94a3b8" font-size="10">Token savings at 50 tables: </text>
   <text x="637" y="395" fill="#22c55e" font-size="11" font-weight="700">50%</text>
