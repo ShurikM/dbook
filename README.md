@@ -110,12 +110,21 @@ Tested on an Amazon-like e-commerce database (34 tables, 15 business tasks, 4 ag
 
 ## Built on agentlib
 
-dbook's architecture is built on [agentlib](https://github.com/barkain/agentlib) -- the knowledge library framework for AI agents. agentlib pioneered the L0/L1/L2 layered navigation pattern, concept indexing with aliases, and the SKILL-based navigation protocol that dbook adapts for databases.
+dbook is built on [agentlib](https://github.com/barkain/agentlib) — the knowledge library framework for AI agents.
 
-- **agentlib** makes books and documents navigable by AI agents
-- **dbook** applies the same architecture to make databases navigable by AI agents
+**The insight:** agentlib proved that AI agents consume knowledge more effectively through structured, layered navigation — not raw content dumps. Books need a table of contents, chapter summaries, and a concept index for agents to find what they need without reading everything.
 
-dbook uses agentlib's LLM provider abstraction and follows its conventions for navigation, concept indexing, and agent integration.
+**Databases have the same problem.** An agent facing 50 database tables is like an agent facing a 500-page book — without navigation, it reads everything (wasteful) or guesses (wrong). dbook applies agentlib's proven L0/L1/L2 navigation architecture to databases:
+
+| agentlib (books) | dbook (databases) |
+|-----------------|-------------------|
+| NAVIGATION.md → book catalog | NAVIGATION.md → table overview |
+| manifest.json → chapter summaries | _manifest.md → schema details |
+| chunk .md → content sections | table .md → columns, values, metrics |
+| concepts.json → term lookup | Mechanical + LLM concept aliases |
+| SKILL.md → navigation protocol | SKILL.md → navigation protocol |
+
+agentlib makes books navigable. dbook makes databases navigable. Same architecture, different domain.
 
 ## Architecture
 
