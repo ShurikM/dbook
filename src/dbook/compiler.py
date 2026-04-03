@@ -72,6 +72,20 @@ def compile_book(book: BookMeta, output_dir: str | Path, metrics_file: str | Pat
             if not table.summary:
                 table.summary = _mechanical_summary(table)
 
+    # Domain tagging
+    from dbook.domains import detect_domain
+
+    for schema in book.schemas.values():
+        for table in schema.tables.values():
+            if not table.domain:
+                col_names = [c.name for c in table.columns]
+                table.domain = detect_domain(table.name, col_names)
+
+    # Build FK graph for programmatic use
+    from dbook.graph import FKGraph
+
+    book._fk_graph = FKGraph(book)  # type: ignore[attr-defined]
+
     # Load user-defined metrics
     from dbook.metrics import MetricDefinition, load_metrics
 

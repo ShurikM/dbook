@@ -1,3 +1,7 @@
 """dbook — Database metadata compiler for AI agent consumption."""
 
 __version__ = "0.1.0"
+
+from dbook.serializer import book_to_dict, book_to_json, load_book_json, save_book_json
+
+__all__ = ["book_to_dict", "book_to_json", "load_book_json", "save_book_json"]

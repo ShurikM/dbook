@@ -55,6 +55,7 @@ class TableMeta:
     summary: str = ""
     column_purposes: dict[str, str] = field(default_factory=dict)
     enum_values: dict[str, list[str]] = field(default_factory=dict)  # col_name -> distinct values
+    domain: str = ""  # auto-detected: "auth", "billing", "analytics", "inventory", etc.
 
 
 @dataclass

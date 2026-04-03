@@ -9,6 +9,20 @@ description = "Database metadata compiler for AI agent consumption"
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.11"
+authors = [
+    {name = "Shurik M", email = "shurik@example.com"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Software Development :: Libraries",
+]
+keywords = ["database", "metadata", "ai", "agent", "sql", "schema", "introspection"]
 dependencies = [
     "sqlalchemy>=2.0",
     "click>=8.0",
@@ -23,10 +37,21 @@ bigquery = ["sqlalchemy-bigquery"]
 pii = ["presidio-analyzer", "presidio-anonymizer"]
 llm = ["anthropic", "openai"]
 metrics = ["pyyaml"]
+embeddings = ["sentence-transformers"]
 dev = [
     "pytest>=7.0",
     "tiktoken",
 ]
+all = [
+    "dbook[pii]",
+    "dbook[llm]",
+    "dbook[metrics]",
+]
+
+[project.urls]
+Homepage = "https://github.com/ShurikM/dbook"
+Repository = "https://github.com/ShurikM/dbook"
+Issues = "https://github.com/ShurikM/dbook/issues"
 
 [project.scripts]
 dbook = "dbook.cli:main"

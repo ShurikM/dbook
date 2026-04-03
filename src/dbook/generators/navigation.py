@@ -130,8 +130,8 @@ def generate_navigation(
     # Compact table overview
     lines.append(f"## Tables ({total_tables})")
     lines.append("")
-    lines.append("| Table | Rows | Key Columns | References | Description | ~Tok |")
-    lines.append("|-------|------|-------------|------------|-------------|------|")
+    lines.append("| Table | Rows | Key Columns | References | Domain | Description | ~Tok |")
+    lines.append("|-------|------|-------------|------------|--------|-------------|------|")
 
     for _schema_name, schema in sorted(book.schemas.items()):
         for table_name, table in sorted(schema.tables.items()):
@@ -140,7 +140,8 @@ def generate_navigation(
             refs = _references(table)
             desc = _description(table, book)
             tok = _estimate_table_tokens(table)
-            lines.append(f"| {table_name} | {rows} | {key_cols} | {refs} | {desc} | {tok} |")
+            domain = table.domain or "-"
+            lines.append(f"| {table_name} | {rows} | {key_cols} | {refs} | {domain} | {desc} | {tok} |")
 
     lines.append("")
 

@@ -6,10 +6,56 @@ import json
 import sys
 import time
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import click  # type: ignore[import-untyped]
 
 from dbook import __version__
+
+if TYPE_CHECKING:
+    from dbook.models import BookMeta
+
+
+def _introspect(
+    database_url: str,
+    schema_list: list[str | None] | None,
+    async_workers: int,
+    *,
+    include_sample_data: bool,
+    sample_limit: int,
+    include_row_count: bool,
+) -> tuple[str, BookMeta]:
+    """Connect and introspect, returning (dialect, book).
+
+    Uses AsyncSQLAlchemyCatalog when *async_workers* > 1.
+    """
+    if async_workers > 1:
+        import asyncio
+
+        from dbook.async_catalog import AsyncSQLAlchemyCatalog
+
+        cat = AsyncSQLAlchemyCatalog(
+            database_url, max_workers=async_workers,
+        )
+        dialect = cat._catalog.dialect
+        book = asyncio.run(cat.introspect_all(
+            schemas=schema_list,
+            include_sample_data=include_sample_data,
+            sample_limit=sample_limit,
+            include_row_count=include_row_count,
+        ))
+    else:
+        from dbook.catalog import SQLAlchemyCatalog
+
+        cat_sync = SQLAlchemyCatalog(database_url)
+        dialect = cat_sync.dialect
+        book = cat_sync.introspect_all(
+            schemas=schema_list,
+            include_sample_data=include_sample_data,
+            sample_limit=sample_limit,
+            include_row_count=include_row_count,
+        )
+    return dialect, book
 
 
 @click.group()
@@ -32,28 +78,25 @@ def main():
 @click.option("--llm-provider", default=None, help="LLM provider: anthropic, openai, gemini")
 @click.option("--llm-key", default=None, help="LLM API key")
 @click.option("--metrics", default=None, type=click.Path(), help="Path to metrics.yaml with user-defined metric definitions")
-def compile(database_url, output, schemas, incremental, sample_rows, no_sample_data, no_row_count, pii, llm, llm_provider, llm_key, metrics):
+@click.option("--output-format", type=click.Choice(["markdown", "json", "both"]), default="markdown", help="Output format: markdown files, JSON, or both")
+@click.option("--async-workers", default=1, type=int, help="Number of parallel workers for introspection (default: 1)")
+def compile(database_url, output, schemas, incremental, sample_rows, no_sample_data, no_row_count, pii, llm, llm_provider, llm_key, metrics, output_format, async_workers):
     """Compile database metadata into a dbook directory.
 
     DATABASE_URL is a SQLAlchemy connection string (e.g., postgresql://user:pass@host/db).
     DB type is auto-detected from the URL scheme.
     """
-    from dbook.catalog import SQLAlchemyCatalog
     from dbook.compiler import compile_book
 
     output_path = Path(output)
-    schema_list = [s.strip() for s in schemas.split(",")] if schemas else None
+    schema_list: list[str | None] | None = (
+        [s.strip() for s in schemas.split(",")]
+        if schemas
+        else None
+    )
 
     click.echo(f"dbook v{__version__}")
     click.echo("Connecting to database...")
-
-    try:
-        catalog = SQLAlchemyCatalog(database_url)
-    except Exception as e:
-        click.echo(f"Error: Failed to connect: {e}", err=True)
-        sys.exit(1)
-
-    click.echo(f"Dialect: {catalog.dialect}")
 
     # Determine mode
     mode = "base"
@@ -69,12 +112,20 @@ def compile(database_url, output, schemas, incremental, sample_rows, no_sample_d
 
     start = time.monotonic()
 
-    book = catalog.introspect_all(
-        schemas=schema_list,
-        include_sample_data=not no_sample_data,
-        sample_limit=sample_rows,
-        include_row_count=not no_row_count,
-    )
+    try:
+        dialect, book = _introspect(
+            database_url,
+            schema_list,
+            async_workers,
+            include_sample_data=not no_sample_data,
+            sample_limit=sample_rows,
+            include_row_count=not no_row_count,
+        )
+    except Exception as e:
+        click.echo(f"Error: Failed to connect: {e}", err=True)
+        sys.exit(1)
+
+    click.echo(f"Dialect: {dialect}")
     book.mode = mode
 
     elapsed_introspect = time.monotonic() - start
@@ -116,33 +167,42 @@ def compile(database_url, output, schemas, incremental, sample_rows, no_sample_d
 
     # Compile
     start = time.monotonic()
+    output_path.mkdir(parents=True, exist_ok=True)
 
-    if incremental and output_path.exists():
-        checksums_file = output_path / "checksums.json"
-        if checksums_file.exists():
-            from dbook.incremental import incremental_compile
-            old_checksums = json.loads(checksums_file.read_text())
-            click.echo("Running incremental compile...")
-            result = incremental_compile(book, output_path, old_checksums)  # noqa: metrics not supported for incremental yet
-            elapsed_compile = time.monotonic() - start
-            click.echo(f"Incremental compile complete ({elapsed_compile:.1f}s):")
-            click.echo(f"  Added: {len(result.added)}")
-            click.echo(f"  Modified: {len(result.modified)}")
-            click.echo(f"  Removed: {len(result.removed)}")
-            click.echo(f"  Unchanged: {len(result.unchanged)}")
-            click.echo(f"  Files written: {result.files_written}")
+    if output_format in ("markdown", "both"):
+        if incremental and output_path.exists():
+            checksums_file = output_path / "checksums.json"
+            if checksums_file.exists():
+                from dbook.incremental import incremental_compile
+                old_checksums = json.loads(checksums_file.read_text())
+                click.echo("Running incremental compile...")
+                # metrics not supported for incremental yet
+                result = incremental_compile(book, output_path, old_checksums)
+                elapsed_compile = time.monotonic() - start
+                click.echo(f"Incremental compile complete ({elapsed_compile:.1f}s):")
+                click.echo(f"  Added: {len(result.added)}")
+                click.echo(f"  Modified: {len(result.modified)}")
+                click.echo(f"  Removed: {len(result.removed)}")
+                click.echo(f"  Unchanged: {len(result.unchanged)}")
+                click.echo(f"  Files written: {result.files_written}")
+            else:
+                click.echo("No existing checksums found. Running full compile...")
+                result = compile_book(book, output_path, metrics_file=metrics)
+                elapsed_compile = time.monotonic() - start
+                click.echo(f"Full compile: {result['files_written']} files written ({elapsed_compile:.1f}s)")
         else:
-            click.echo("No existing checksums found. Running full compile...")
             result = compile_book(book, output_path, metrics_file=metrics)
             elapsed_compile = time.monotonic() - start
-            click.echo(f"Full compile: {result['files_written']} files written ({elapsed_compile:.1f}s)")
-    else:
-        result = compile_book(book, output_path, metrics_file=metrics)
-        elapsed_compile = time.monotonic() - start
-        click.echo(f"Compiled {result['tables']} tables across {result['schemas']} schema(s)")
-        click.echo(f"  Files written: {result['files_written']}")
-        click.echo(f"  Output: {output_path}")
-        click.echo(f"  Time: {elapsed_compile:.1f}s")
+            click.echo(f"Compiled {result['tables']} tables across {result['schemas']} schema(s)")
+            click.echo(f"  Files written: {result['files_written']}")
+            click.echo(f"  Output: {output_path}")
+            click.echo(f"  Time: {elapsed_compile:.1f}s")
+
+    if output_format in ("json", "both"):
+        from dbook.serializer import save_book_json
+        json_path = output_path / "dbook.json"
+        save_book_json(book, json_path)
+        click.echo(f"  JSON output: {json_path}")
 
     click.echo("Done.")
 
