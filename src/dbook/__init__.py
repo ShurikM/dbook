@@ -3,7 +3,7 @@
 Built on agentlib (https://github.com/barkain/agentlib).
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 from dbook.serializer import book_to_dict, book_to_json, load_book_json, save_book_json
 
