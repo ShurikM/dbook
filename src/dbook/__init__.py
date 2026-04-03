@@ -1,4 +1,7 @@
-"""dbook — Database metadata compiler for AI agent consumption."""
+"""dbook — Database metadata compiler for AI agent consumption.
+
+Built on agentlib (https://github.com/barkain/agentlib).
+"""
 
 __version__ = "0.1.0"
 

@@ -38,6 +38,7 @@ pii = ["presidio-analyzer", "presidio-anonymizer"]
 llm = ["anthropic", "openai"]
 metrics = ["pyyaml"]
 embeddings = ["sentence-transformers"]
+agentlib = ["agentlib @ git+https://github.com/barkain/agentlib.git"]
 dev = [
     "pytest>=7.0",
     "tiktoken",
@@ -55,6 +56,9 @@ Issues = "https://github.com/ShurikM/dbook/issues"
 
 [project.scripts]
 dbook = "dbook.cli:main"
+
+[tool.hatch.metadata]
+allow-direct-references = true
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/dbook"]

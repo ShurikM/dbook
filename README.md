@@ -108,6 +108,15 @@ Tested on an Amazon-like e-commerce database (34 tables, 15 business tasks, 4 ag
 - 50 tables: ~50% fewer tokens per query vs reading all DDL
 - Scales linearly — larger databases see larger savings
 
+## Built on agentlib
+
+dbook's architecture is built on [agentlib](https://github.com/barkain/agentlib) -- the knowledge library framework for AI agents. agentlib pioneered the L0/L1/L2 layered navigation pattern, concept indexing with aliases, and the SKILL-based navigation protocol that dbook adapts for databases.
+
+- **agentlib** makes books and documents navigable by AI agents
+- **dbook** applies the same architecture to make databases navigable by AI agents
+
+dbook uses agentlib's LLM provider abstraction and follows its conventions for navigation, concept indexing, and agent integration.
+
 ## Architecture
 
 ```

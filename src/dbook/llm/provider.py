@@ -1,4 +1,13 @@
-"""LLM provider abstraction with implementations."""
+"""LLM provider — built on agentlib's multi-provider LLM layer.
+
+agentlib (https://github.com/barkain/agentlib) provides the unified LLM
+client that supports Anthropic, OpenAI, Google, xAI, and DeepSeek.  dbook
+wraps it with a stable ``LLMProvider`` protocol so that the rest of the
+codebase (enricher, CLI, tests) stays unchanged.
+
+When agentlib is not installed, dbook falls back to its own built-in
+provider implementations.
+"""
 
 from __future__ import annotations
 
@@ -8,6 +17,39 @@ from typing import Protocol, runtime_checkable
 
 logger = logging.getLogger(__name__)
 
+# ---------------------------------------------------------------------------
+# Try to import agentlib's LLM layer
+# ---------------------------------------------------------------------------
+_AGENTLIB_AVAILABLE = False
+
+try:
+    from agentlib.lib.llm import call_llm as _agentlib_call_llm  # type: ignore[import-untyped]
+    from agentlib.lib.llm import LLMConfig as _AgentlibLLMConfig  # type: ignore[import-untyped]
+    _AGENTLIB_AVAILABLE = True
+    logger.debug("agentlib LLM layer available — using it as the foundation")
+except ImportError:
+    from dataclasses import dataclass as _dataclass
+
+    @_dataclass
+    class _AgentlibLLMConfig:  # type: ignore[no-redef]
+        """Stub used only when agentlib is not installed."""
+        provider: str = ""
+        model: str = ""
+        api_key: str | None = None
+        base_url: str | None = None
+
+    def _agentlib_call_llm(  # type: ignore[no-redef]  # noqa: ARG001
+        config: _AgentlibLLMConfig, prompt: str, *, max_tokens: int = 1024,
+        images: list[tuple[str, str]] | None = None,
+    ) -> str:
+        raise RuntimeError("agentlib is not installed")
+
+    logger.debug("agentlib not available — using built-in providers")
+
+
+# ---------------------------------------------------------------------------
+# Protocol — unchanged from before so all consumers keep working
+# ---------------------------------------------------------------------------
 
 @runtime_checkable
 class LLMProvider(Protocol):
@@ -17,6 +59,43 @@ class LLMProvider(Protocol):
         """Send a prompt and return the completion text."""
         ...
 
+
+# ---------------------------------------------------------------------------
+# agentlib-backed provider (preferred when agentlib is installed)
+# ---------------------------------------------------------------------------
+
+class AgentlibProvider:
+    """LLM provider wrapping agentlib's ``call_llm``.
+
+    Supports every provider that agentlib supports (Anthropic, OpenAI,
+    Google/Gemini, xAI/Grok, DeepSeek) through a single interface.
+    """
+
+    _DEFAULT_MODELS = {
+        "anthropic": "claude-haiku-4-5-20251001",
+        "openai": "gpt-4o-mini",
+        "google": "gemini-2.0-flash",
+        "gemini": "gemini-2.0-flash",
+        "xai": "grok-3-mini",
+        "deepseek": "deepseek-chat",
+    }
+
+    def __init__(self, provider: str, api_key: str, model: str | None = None):
+        # Map "gemini" -> "google" for agentlib compatibility
+        agentlib_provider = "google" if provider == "gemini" else provider
+        self._config = _AgentlibLLMConfig(
+            provider=agentlib_provider,
+            model=model or self._DEFAULT_MODELS.get(provider, ""),
+            api_key=api_key,
+        )
+
+    def complete(self, prompt: str, max_tokens: int = 500) -> str:
+        return _agentlib_call_llm(self._config, prompt, max_tokens=max_tokens)
+
+
+# ---------------------------------------------------------------------------
+# Mock provider — test-specific, always lives in dbook
+# ---------------------------------------------------------------------------
 
 class MockProvider:
     """Mock provider for testing — returns deterministic responses based on prompt content."""
@@ -132,7 +211,7 @@ class MockProvider:
         if "auth" in prompt.lower():
             return "The authentication schema implements user identity management with RBAC. Users register with email/password, receive role assignments, and create sessions upon login. Sessions track client metadata for security auditing."
         elif "billing" in prompt.lower():
-            return "The billing schema implements a standard e-commerce order lifecycle: users create orders containing product line items, which generate invoices settled via payments. Discount codes can be applied at the order level. The flow is: order → order_items → invoice → payment."
+            return "The billing schema implements a standard e-commerce order lifecycle: users create orders containing product line items, which generate invoices settled via payments. Discount codes can be applied at the order level. The flow is: order \u2192 order_items \u2192 invoice \u2192 payment."
         elif "analytics" in prompt.lower():
             return "The analytics schema captures user behavior and business metrics. Raw interaction events feed into pre-aggregated daily revenue summaries. Conversion funnels define multi-step user journeys for measuring drop-off rates."
         elif "inventory" in prompt.lower():
@@ -161,7 +240,7 @@ class MockProvider:
                 "id": "Unique order identifier",
                 "user_id": "Reference to the customer who placed the order",
                 "total": "Order total amount after discounts",
-                "status": "Order lifecycle state: pending → confirmed → shipped → delivered",
+                "status": "Order lifecycle state: pending \u2192 confirmed \u2192 shipped \u2192 delivered",
                 "discount_id": "Applied discount code, null if no discount",
                 "created_at": "Timestamp when order was placed",
                 "updated_at": "Timestamp of last status change",
@@ -172,8 +251,12 @@ class MockProvider:
         return json.dumps(purposes)
 
 
-class AnthropicProvider:
-    """Anthropic Claude provider."""
+# ---------------------------------------------------------------------------
+# Built-in fallback providers (used when agentlib is not installed)
+# ---------------------------------------------------------------------------
+
+class _AnthropicProvider:
+    """Anthropic Claude provider (built-in fallback)."""
 
     def __init__(self, api_key: str, model: str = "claude-haiku-4-5-20251001"):
         self.api_key = api_key
@@ -193,8 +276,8 @@ class AnthropicProvider:
             raise ImportError("anthropic package required. Install with: pip install anthropic")
 
 
-class OpenAIProvider:
-    """OpenAI provider."""
+class _OpenAIProvider:
+    """OpenAI provider (built-in fallback)."""
 
     def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
         self.api_key = api_key
@@ -214,8 +297,8 @@ class OpenAIProvider:
             raise ImportError("openai package required. Install with: pip install openai")
 
 
-class GeminiProvider:
-    """Google Gemini provider."""
+class _GeminiProvider:
+    """Google Gemini provider (built-in fallback)."""
 
     def __init__(self, api_key: str, model: str = "gemini-2.0-flash"):
         self.api_key = api_key
@@ -239,23 +322,36 @@ class GeminiProvider:
             raise ImportError("requests package required for Gemini provider")
 
 
+# ---------------------------------------------------------------------------
+# Factory
+# ---------------------------------------------------------------------------
+
 def create_provider(provider_name: str, api_key: str, model: str | None = None) -> LLMProvider:
-    """Factory to create a provider by name."""
-    providers = {
-        "anthropic": AnthropicProvider,
-        "openai": OpenAIProvider,
-        "gemini": GeminiProvider,
-        "mock": MockProvider,
+    """Factory to create a provider by name.
+
+    When agentlib is installed, real providers use agentlib's unified
+    ``call_llm`` under the hood.  When it is not, dbook's built-in
+    fallback implementations are used instead.
+    """
+    if provider_name == "mock":
+        return MockProvider()
+
+    # Use agentlib when available for real providers
+    if _AGENTLIB_AVAILABLE and provider_name in ("anthropic", "openai", "gemini", "google", "xai", "deepseek"):
+        return AgentlibProvider(provider=provider_name, api_key=api_key, model=model)
+
+    # Fallback to built-in implementations
+    _fallback_providers = {
+        "anthropic": _AnthropicProvider,
+        "openai": _OpenAIProvider,
+        "gemini": _GeminiProvider,
     }
 
-    if provider_name not in providers:
-        raise ValueError(f"Unknown provider '{provider_name}'. Available: {list(providers.keys())}")
+    if provider_name not in _fallback_providers:
+        raise ValueError(f"Unknown provider '{provider_name}'. Available: {list(_fallback_providers.keys())}")
 
-    cls = providers[provider_name]
-    if provider_name == "mock":
-        return cls()
-
-    kwargs = {"api_key": api_key}
+    cls = _fallback_providers[provider_name]
+    kwargs: dict = {"api_key": api_key}
     if model:
         kwargs["model"] = model
     return cls(**kwargs)
