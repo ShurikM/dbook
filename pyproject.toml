@@ -26,7 +26,6 @@ dependencies = [
     "sqlalchemy>=2.0",
     "click>=8.0",
     "sqlglot>=20.0",
-    "agentlib @ git+https://github.com/barkain/agentlib.git",
 ]
 
 [project.optional-dependencies]
