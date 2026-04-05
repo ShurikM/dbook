@@ -167,7 +167,7 @@ class TestCompileOutput:
 
         nav = tmp_path / "NAVIGATION.md"
         tokens = count_tokens(nav.read_text())
-        # Compact table overview + lineage for 13 tables should be under 1200 tokens
-        assert tokens < 1200, (
-            f"NAVIGATION.md is {tokens} tokens, should be < 1200"
+        # Compact table overview + lineage for 13 tables should be under 1300 tokens
+        assert tokens < 1300, (
+            f"NAVIGATION.md is {tokens} tokens, should be < 1300"
         )

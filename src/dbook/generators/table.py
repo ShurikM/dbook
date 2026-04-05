@@ -70,10 +70,55 @@ def _column_values_display(col_name: str, table: TableMeta) -> str:
 
 # --- Example queries ---
 
+# Column names that commonly serve as natural lookup keys, even without
+# an explicit unique index.  Keep lowercase; matching is case-insensitive.
+_NATURAL_LOOKUP_NAMES: set[str] = {
+    "code", "email", "slug", "sku", "asin", "isbn", "username",
+    "login", "handle", "token", "ssn", "ean", "upc", "isin",
+}
+
+
 def _sql_example(label: str, *parts: str) -> str:
     """Build an example query string for documentation (not executed)."""
     sql = "".join(parts)
     return label + ": `" + sql + "`"
+
+
+def _unique_key_lookups(table: TableMeta) -> list[str]:
+    """Generate lookup-by-unique-key examples.
+
+    Sources (in priority order):
+    1. UNIQUE indexes on non-PK single columns.
+    2. Columns whose name matches a common natural-key pattern
+       (code, email, slug, ...) even without a declared unique index.
+    """
+    pk_set = set(table.primary_key) if table.primary_key else set()
+    already: set[str] = set()
+    queries: list[str] = []
+    t = table.name
+
+    # 1) Columns covered by an explicit unique index
+    for idx in table.indexes:
+        if idx.unique and len(idx.columns) == 1:
+            col = idx.columns[0]
+            if col not in pk_set and col not in already:
+                already.add(col)
+                queries.append(_sql_example(
+                    "Lookup by " + col,
+                    "SELECT * FROM ", t, " WHERE ", col, " = ?",
+                ))
+
+    # 2) Columns with well-known natural-key names (fallback)
+    for col in table.columns:
+        if col.name.lower() in _NATURAL_LOOKUP_NAMES:
+            if col.name not in pk_set and col.name not in already:
+                already.add(col.name)
+                queries.append(_sql_example(
+                    "Lookup by " + col.name,
+                    "SELECT * FROM ", t, " WHERE ", col.name, " = ?",
+                ))
+
+    return queries
 
 
 def _generate_example_queries(table: TableMeta) -> list[str]:  # noqa: S608
@@ -88,6 +133,9 @@ def _generate_example_queries(table: TableMeta) -> list[str]:  # noqa: S608
             "By " + pk,
             "SELECT * FROM ", t, " WHERE ", pk, " = ?",
         ))
+
+    # Unique-key / natural-key lookups (before FK joins so agents see them first)
+    queries.extend(_unique_key_lookups(table))
 
     # FK join (first FK only)
     if table.foreign_keys:
@@ -143,7 +191,7 @@ def _generate_example_queries(table: TableMeta) -> list[str]:  # noqa: S608
             " GROUP BY ", group_col,
         ))
 
-    return queries[:5]  # Max 5 examples
+    return queries[:6]  # Max 6 examples
 
 
 # --- Token estimation ---

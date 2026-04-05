@@ -1,0 +1,740 @@
+{
+  "timestamp": "2026-04-05T03:57:37.803802+00:00",
+  "config": {
+    "db_url": "postgresql://bench:bench@localhost:5433/benchdb",
+    "dbook_path": "output/dbook",
+    "mode": "mock",
+    "scenario_count": 15
+  },
+  "results": [
+    {
+      "scenario_id": "B1",
+      "agent_type": "billing",
+      "mode": "dbook",
+      "question": "Customer #4521 is disputing a charge of $89.99 from March 15, 2026. Find the payment, the related order, and check if there's already a refund or dispute on file.",
+      "difficulty": "medium",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "billing.invoices",
+        "billing.payment_disputes",
+        "billing.payments",
+        "billing.refunds"
+      ],
+      "sql_generated": "SELECT p.id AS payment_id, p.amount, p.processed_at, p.status AS payment_status,\n                   p.processor_ref, i.order_id, i.invoice_number,\n                   r.id AS refund_id, r.status AS refund_status, r.amount AS refund_amount,\n                   d.id AS dispute_id, d.status AS dispute_status, d.dispute_type\n            FROM billing.payments p\n            JOIN billing.invoices i ON p.invoice_id = i.id\n            LEFT JOIN billing.refunds r ON r.payment_id = p.id\n            LEFT JOIN billing.payment_disputes d ON d.payment_id = p.id\n            WHERE i.account_id = 4521\n              AND p.amount = 89.99\n              AND p.processed_at::date = '2026-03-15'",
+      "sql_executed_ok": true,
+      "query_results_count": 1,
+      "response_text": "Found 1 result(s).\nColumns: amount, dispute_id, dispute_status, dispute_type, invoice_number, order_id, payment_id, payment_status, processed_at, processor_ref, refund_amount, refund_id, refund_status\nRow 1:\n  payment_id: 7001\n  amount: 89.99\n  processed_at: 2026-03-15 00:00:00+00:00\n  payment_status: completed\n  processor_ref: ch_abc123\n  order_id: 34567\n  invoice_number: INV-009001",
+      "scores": {
+        "table_discovery": 4,
+        "sql_correctness": 4.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "B1",
+      "agent_type": "billing",
+      "mode": "no_dbook",
+      "question": "Customer #4521 is disputing a charge of $89.99 from March 15, 2026. Find the payment, the related order, and check if there's already a refund or dispute on file.",
+      "difficulty": "medium",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "billing.invoices",
+        "billing.payment_disputes",
+        "billing.payments"
+      ],
+      "sql_generated": "SELECT p.id AS payment_id, p.amount, p.processed_at, p.status AS payment_status,\n                   p.processor_ref, i.order_id, i.invoice_number,\n                   r.id AS refund_id, r.status AS refund_status, r.amount AS refund_amount,\n                   d.id AS dispute_id, d.status AS dispute_status, d.dispute_type\n            FROM billing.payments p\n            JOIN billing.invoices i ON p.invoice_id = i.id\n            LEFT JOIN billing.payment_disputes d ON d.payment_id = p.id\n            WHERE i.account_id = 4521\n              AND p.amount = 89.99\n              AND p.processed_at::date = '2026-03-15'",
+      "sql_executed_ok": false,
+      "query_results_count": 0,
+      "response_text": "Error: (psycopg2.errors.UndefinedTable) missing FROM-clause entry for table \"r\"\nLINE 3:                    r.id AS refund_id, r.status AS refund_sta...\n                           ^\n\n[SQL: SELECT p.id AS payment_id, p.amount, p.processed_at, p.status AS payment_status,\n                   p.processor_ref, i.order_id, i.invoice_number,\n                   r.id AS refund_id, r.status AS refund_status, r.amount AS refund_amount,\n                   d.id AS dispute_id, d.status AS dispute_status, d.disp",
+      "scores": {
+        "table_discovery": 3,
+        "sql_correctness": 1.0,
+        "result_accuracy": 1.0,
+        "response_quality": 1.0
+      }
+    },
+    {
+      "scenario_id": "B2",
+      "agent_type": "billing",
+      "mode": "dbook",
+      "question": "Generate a billing summary for account #1200 covering the last 3 months. Show all invoices, total payments received, and outstanding balance.",
+      "difficulty": "medium",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "billing.invoices",
+        "billing.payments"
+      ],
+      "sql_generated": "SELECT i.id, i.invoice_number, i.total, i.status, i.issued_at, i.paid_at,\n                   COALESCE(SUM(p.amount) FILTER (WHERE p.status = 'completed'), 0) AS paid_amount,\n                   i.total - COALESCE(SUM(p.amount) FILTER (WHERE p.status = 'completed'), 0) AS outstanding\n            FROM billing.invoices i\n            LEFT JOIN billing.payments p ON p.invoice_id = i.id\n            WHERE i.account_id = 1200\n              AND i.issued_at >= NOW() - INTERVAL '3 months'\n            GROUP BY i.id\n            ORDER BY i.issued_at DESC",
+      "sql_executed_ok": true,
+      "query_results_count": 4,
+      "response_text": "Found 4 result(s).\nColumns: id, invoice_number, issued_at, outstanding, paid_amount, paid_at, status, total\nRow 1:\n  id: 9103\n  invoice_number: INV-009103\n  total: 210.00\n  status: overdue\n  issued_at: 2026-03-05 00:00:00+00:00\n  paid_amount: 0\n  outstanding: 210.00\nRow 2:\n  id: 9102\n  invoice_number: INV-009102\n  total: 85.30\n  status: sent\n  issued_at: 2026-02-12 00:00:00+00:00\n  paid_amount: 376.85\n  outstanding: -291.55\nRow 3:\n  id: 9101\n  invoice_number: INV-009101\n  total: 120.50\n  status:",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "B2",
+      "agent_type": "billing",
+      "mode": "no_dbook",
+      "question": "Generate a billing summary for account #1200 covering the last 3 months. Show all invoices, total payments received, and outstanding balance.",
+      "difficulty": "medium",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [],
+      "sql_generated": "SELECT i.id, i.invoice_number, i.total, i.status, i.issued_at, i.paid_at,\n                   COALESCE(SUM(p.amount) FILTER (WHERE p.status = 'completed'), 0) AS paid_amount,\n                   i.total - COALESCE(SUM(p.amount) FILTER (WHERE p.status = 'completed'), 0) AS outstanding\n            FROM invoices i\n            LEFT JOIN payments p ON p.invoice_id = i.id\n            WHERE i.account_id = 1200\n              AND i.issued_at >= NOW() - INTERVAL '3 months'\n            GROUP BY i.id\n            ORDER BY i.issued_at DESC",
+      "sql_executed_ok": false,
+      "query_results_count": 0,
+      "response_text": "Error: (psycopg2.errors.UndefinedTable) relation \"invoices\" does not exist\nLINE 4:             FROM invoices i\n                         ^\n\n[SQL: SELECT i.id, i.invoice_number, i.total, i.status, i.issued_at, i.paid_at,\n                   COALESCE(SUM(p.amount) FILTER (WHERE p.status = 'completed'), 0) AS paid_amount,\n                   i.total - COALESCE(SUM(p.amount) FILTER (WHERE p.status = 'completed'), 0) AS outstanding\n            FROM invoices i\n            LEFT JOIN payments p ON p.invoic",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 1.0,
+        "result_accuracy": 1.0,
+        "response_quality": 1.0
+      }
+    },
+    {
+      "scenario_id": "B3",
+      "agent_type": "billing",
+      "mode": "dbook",
+      "question": "Customer #4521 wants to cancel their Premium Annual subscription. What is the prorated refund amount based on time remaining? Are there any active promotions they would lose?",
+      "difficulty": "hard",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "billing.subscriptions"
+      ],
+      "sql_generated": "SELECT s.id, s.plan, s.price, s.billing_cycle, s.status,\n                   s.started_at, s.next_billing_at, s.auto_renew,\n                   s.price * (1.0 - EXTRACT(EPOCH FROM (NOW() - s.started_at))\n                              / EXTRACT(EPOCH FROM (s.next_billing_at - s.started_at))) AS prorated_refund\n            FROM billing.subscriptions s\n            WHERE s.account_id = 4521\n              AND s.plan = 'Premium Annual'\n              AND s.status = 'active'",
+      "sql_executed_ok": true,
+      "query_results_count": 1,
+      "response_text": "Found 1 result(s).\nColumns: auto_renew, billing_cycle, id, next_billing_at, plan, price, prorated_refund, started_at, status\nRow 1:\n  id: 42\n  plan: Premium Annual\n  price: 139.00\n  billing_cycle: annual\n  status: active\n  started_at: 2025-09-16 18:46:15.357014+00:00\n  next_billing_at: 2026-09-16 18:46:15.357014+00:00\n  auto_renew: True\n  prorated_refund: 62.6898022029389903595300",
+      "scores": {
+        "table_discovery": 2,
+        "sql_correctness": 3.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "B3",
+      "agent_type": "billing",
+      "mode": "no_dbook",
+      "question": "Customer #4521 wants to cancel their Premium Annual subscription. What is the prorated refund amount based on time remaining? Are there any active promotions they would lose?",
+      "difficulty": "hard",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "billing.subscriptions"
+      ],
+      "sql_generated": "SELECT s.id, s.plan, s.price, s.billing_cycle, s.status,\n                   s.started_at, s.next_billing_at, s.auto_renew,\n                   s.price * (1.0 - EXTRACT(EPOCH FROM (NOW() - s.started_at))\n                              / EXTRACT(EPOCH FROM (s.next_billing_at - s.started_at))) AS prorated_refund\n            FROM billing.subscriptions s\n            WHERE s.account_id = 4521\n              AND s.plan = 'Premium Annual'\n              AND s.status = 'enabled'",
+      "sql_executed_ok": true,
+      "query_results_count": 0,
+      "response_text": "No matching records found.",
+      "scores": {
+        "table_discovery": 2,
+        "sql_correctness": 3.0,
+        "result_accuracy": 1.0,
+        "response_quality": 1.0
+      }
+    },
+    {
+      "scenario_id": "B4",
+      "agent_type": "billing",
+      "mode": "dbook",
+      "question": "Apply promo code SPRING25 to order #78234. Verify the promo is valid, check minimum order requirement, and calculate the discount.",
+      "difficulty": "easy",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "billing.promotions",
+        "orders.orders"
+      ],
+      "sql_generated": "SELECT p.code, p.name, p.type, p.value, p.min_order, p.max_discount,\n                   p.valid_from, p.valid_until, p.is_active, p.used_count, p.max_uses,\n                   o.total AS order_total,\n                   LEAST(o.total * p.value / 100.0, p.max_discount) AS discount_amount,\n                   CASE WHEN o.total >= p.min_order\n                             AND p.is_active\n                             AND p.valid_from <= NOW()\n                             AND (p.valid_until IS NULL OR p.valid_until >= NOW())\n                             AND (p.max_uses IS NULL OR p.used_count < p.max_uses)\n                        THEN true ELSE false\n                   END AS can_apply\n            FROM billing.promotions p, orders.orders o\n            WHERE p.code = 'SPRING25' AND o.id = 78234",
+      "sql_executed_ok": true,
+      "query_results_count": 1,
+      "response_text": "Found 1 result(s).\nColumns: can_apply, code, discount_amount, is_active, max_discount, max_uses, min_order, name, order_total, type, used_count, valid_from, valid_until, value\nRow 1:\n  code: SPRING25\n  name: Spring 25% Off\n  type: percentage\n  value: 25.00\n  min_order: 50.00\n  max_discount: 100.00\n  valid_from: 2026-03-05 18:46:15.357014+00:00\n  valid_until: 2026-06-03 18:46:15.357014+00:00\n  is_active: True\n  used_count: 142\n  max_uses: 1000\n  order_total: 212.13\n  discount_amount: 53.032500000",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "B4",
+      "agent_type": "billing",
+      "mode": "no_dbook",
+      "question": "Apply promo code SPRING25 to order #78234. Verify the promo is valid, check minimum order requirement, and calculate the discount.",
+      "difficulty": "easy",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "billing.promotions",
+        "orders.orders"
+      ],
+      "sql_generated": "SELECT p.code, p.name, p.type, p.value, p.min_order, p.max_discount,\n                   p.valid_from, p.valid_until, p.is_active, p.used_count, p.max_uses,\n                   o.total AS order_total,\n                   LEAST(o.total * p.value / 100.0, p.max_discount) AS discount_amount,\n                   CASE WHEN o.total >= p.min_order\n                             AND p.is_active\n                             AND p.valid_from <= NOW()\n                             AND (p.valid_until IS NULL OR p.valid_until >= NOW())\n                             AND (p.max_uses IS NULL OR p.used_count < p.max_uses)\n                        THEN true ELSE false\n                   END AS can_apply\n            FROM billing.promotions p, orders.orders o\n            WHERE p.code = 'SPRING25' AND o.id = 78234",
+      "sql_executed_ok": true,
+      "query_results_count": 1,
+      "response_text": "Found 1 result(s).\nColumns: can_apply, code, discount_amount, is_active, max_discount, max_uses, min_order, name, order_total, type, used_count, valid_from, valid_until, value\nRow 1:\n  code: SPRING25\n  name: Spring 25% Off\n  type: percentage\n  value: 25.00\n  min_order: 50.00\n  max_discount: 100.00\n  valid_from: 2026-03-05 18:46:15.357014+00:00\n  valid_until: 2026-06-03 18:46:15.357014+00:00\n  is_active: True\n  used_count: 142\n  max_uses: 1000\n  order_total: 212.13\n  discount_amount: 53.032500000",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "B5",
+      "agent_type": "billing",
+      "mode": "dbook",
+      "question": "Reconcile gift card GC-4455: show the original balance, all transactions (loads, redemptions, refunds), and current balance.",
+      "difficulty": "easy",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "billing.gift_card_transactions",
+        "billing.gift_cards"
+      ],
+      "sql_generated": "SELECT gc.code, gc.original_amount, gc.balance, gc.status,\n                   gct.transaction_type, gct.amount, gct.created_at\n            FROM billing.gift_cards gc\n            LEFT JOIN billing.gift_card_transactions gct ON gct.gift_card_id = gc.id\n            WHERE gc.code = 'GC-4455'\n            ORDER BY gct.created_at",
+      "sql_executed_ok": true,
+      "query_results_count": 7,
+      "response_text": "Found 7 result(s).\nColumns: amount, balance, code, created_at, original_amount, status, transaction_type\nRow 1:\n  code: GC-4455\n  original_amount: 100.00\n  balance: 42.50\n  status: active\n  transaction_type: load\n  amount: 282.55\n  created_at: 2025-06-17 01:04:54.473769+00:00\nRow 2:\n  code: GC-4455\n  original_amount: 100.00\n  balance: 42.50\n  status: active\n  transaction_type: redeem\n  amount: 292.39\n  created_at: 2025-06-24 02:17:45.240460+00:00\nRow 3:\n  code: GC-4455\n  original_amount: 100.00\n",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "B5",
+      "agent_type": "billing",
+      "mode": "no_dbook",
+      "question": "Reconcile gift card GC-4455: show the original balance, all transactions (loads, redemptions, refunds), and current balance.",
+      "difficulty": "easy",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "billing.gift_card_transactions",
+        "billing.gift_cards"
+      ],
+      "sql_generated": "SELECT gc.code, gc.original_amount, gc.balance, gc.status,\n                   gct.transaction_type, gct.amount, gct.created_at\n            FROM billing.gift_cards gc\n            LEFT JOIN billing.gift_card_transactions gct ON gct.gift_card_id = gc.id\n            WHERE gc.code = 'GC-4455'\n            ORDER BY gct.created_at",
+      "sql_executed_ok": true,
+      "query_results_count": 7,
+      "response_text": "Found 7 result(s).\nColumns: amount, balance, code, created_at, original_amount, status, transaction_type\nRow 1:\n  code: GC-4455\n  original_amount: 100.00\n  balance: 42.50\n  status: active\n  transaction_type: load\n  amount: 282.55\n  created_at: 2025-06-17 01:04:54.473769+00:00\nRow 2:\n  code: GC-4455\n  original_amount: 100.00\n  balance: 42.50\n  status: active\n  transaction_type: redeem\n  amount: 292.39\n  created_at: 2025-06-24 02:17:45.240460+00:00\nRow 3:\n  code: GC-4455\n  original_amount: 100.00\n",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "C1",
+      "agent_type": "care",
+      "mode": "dbook",
+      "question": "Customer says 'my order hasn't arrived yet.' Look up order #34567, check shipment status, tracking number, carrier, and expected delivery.",
+      "difficulty": "easy",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "orders.orders",
+        "orders.shipments"
+      ],
+      "sql_generated": "SELECT o.id AS order_id, o.status AS order_status, o.placed_at,\n                   s.carrier, s.tracking_number, s.estimated_delivery,\n                   s.shipped_at, s.delivered_at, s.status AS shipment_status\n            FROM orders.orders o\n            LEFT JOIN orders.shipments s ON s.order_id = o.id\n            WHERE o.id = 34567",
+      "sql_executed_ok": true,
+      "query_results_count": 2,
+      "response_text": "Found 2 result(s).\nColumns: carrier, delivered_at, estimated_delivery, order_id, order_status, placed_at, shipment_status, shipped_at, tracking_number\nRow 1:\n  order_id: 34567\n  order_status: shipped\n  placed_at: 2026-03-30 18:46:15.357014+00:00\n  carrier: UPS\n  tracking_number: 1Z999AA10123456784\n  estimated_delivery: 2026-04-06\n  shipped_at: 2026-04-01 18:46:15.357014+00:00\n  shipment_status: in_transit\nRow 2:\n  order_id: 34567\n  order_status: shipped\n  placed_at: 2026-03-30 18:46:15.357014+00",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "C1",
+      "agent_type": "care",
+      "mode": "no_dbook",
+      "question": "Customer says 'my order hasn't arrived yet.' Look up order #34567, check shipment status, tracking number, carrier, and expected delivery.",
+      "difficulty": "easy",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "orders.orders",
+        "orders.shipments"
+      ],
+      "sql_generated": "SELECT o.id AS order_id, o.status AS order_status, o.placed_at,\n                   s.carrier, s.tracking_number, s.estimated_delivery,\n                   s.shipped_at, s.delivered_at, s.status AS shipment_status\n            FROM orders.orders o\n            LEFT JOIN orders.shipments s ON s.order_id = o.id\n            WHERE o.id = 34567",
+      "sql_executed_ok": true,
+      "query_results_count": 2,
+      "response_text": "Found 2 result(s).\nColumns: carrier, delivered_at, estimated_delivery, order_id, order_status, placed_at, shipment_status, shipped_at, tracking_number\nRow 1:\n  order_id: 34567\n  order_status: shipped\n  placed_at: 2026-03-30 18:46:15.357014+00:00\n  carrier: UPS\n  tracking_number: 1Z999AA10123456784\n  estimated_delivery: 2026-04-06\n  shipped_at: 2026-04-01 18:46:15.357014+00:00\n  shipment_status: in_transit\nRow 2:\n  order_id: 34567\n  order_status: shipped\n  placed_at: 2026-03-30 18:46:15.357014+00",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "C2",
+      "agent_type": "care",
+      "mode": "dbook",
+      "question": "Customer wants to return an item from order #45678. Find the order items, check if it was delivered (for return window), and whether a return already exists.",
+      "difficulty": "medium",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.products",
+        "orders.order_items",
+        "orders.orders",
+        "orders.returns",
+        "orders.shipments"
+      ],
+      "sql_generated": "SELECT oi.id AS item_id, p.title AS product, oi.quantity, oi.unit_price, oi.status AS item_status,\n                   s.delivered_at,\n                   CASE WHEN s.delivered_at IS NOT NULL\n                             AND s.delivered_at > NOW() - INTERVAL '30 days'\n                        THEN 'eligible' ELSE 'expired'\n                   END AS return_eligibility,\n                   r.id AS existing_return_id, r.status AS return_status\n            FROM orders.order_items oi\n            JOIN orders.orders o ON oi.order_id = o.id\n            JOIN catalog.products p ON oi.product_id = p.id\n            LEFT JOIN orders.shipments s ON s.order_id = o.id\n            LEFT JOIN orders.returns r ON r.order_item_id = oi.id\n            WHERE o.id = 45678",
+      "sql_executed_ok": true,
+      "query_results_count": 10,
+      "response_text": "Found 10 result(s).\nColumns: delivered_at, existing_return_id, item_id, item_status, product, quantity, return_eligibility, return_status, unit_price\nRow 1:\n  item_id: 1\n  product: Sony WH-1000XM5\n  quantity: 1\n  unit_price: 89.99\n  item_status: delivered\n  delivered_at: 2026-03-25 18:46:15.357014+00:00\n  return_eligibility: eligible\nRow 2:\n  item_id: 50347\n  product: Citizen range plant memory scientist begin down size.\n  quantity: 122\n  unit_price: 86.83\n  item_status: returned\n  delivered_at:",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 3,
+        "response_quality": 4
+      }
+    },
+    {
+      "scenario_id": "C2",
+      "agent_type": "care",
+      "mode": "no_dbook",
+      "question": "Customer wants to return an item from order #45678. Find the order items, check if it was delivered (for return window), and whether a return already exists.",
+      "difficulty": "medium",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.products",
+        "orders.order_items",
+        "orders.orders",
+        "orders.returns"
+      ],
+      "sql_generated": "SELECT oi.id AS item_id, p.title AS product, oi.quantity, oi.unit_price, oi.status AS item_status,\n                   s.delivered_at,\n                   CASE WHEN s.delivered_at IS NOT NULL\n                             AND s.delivered_at > NOW() - INTERVAL '30 days'\n                        THEN 'eligible' ELSE 'expired'\n                   END AS return_eligibility,\n                   r.id AS existing_return_id, r.status AS return_status\n            FROM orders.order_items oi\n            JOIN orders.orders o ON oi.order_id = o.id\n            JOIN catalog.products p ON oi.product_id = p.id\n            LEFT JOIN orders.returns r ON r.order_item_id = oi.id\n            WHERE o.id = 45678",
+      "sql_executed_ok": false,
+      "query_results_count": 0,
+      "response_text": "Error: (psycopg2.errors.UndefinedTable) missing FROM-clause entry for table \"s\"\nLINE 2:                    s.delivered_at,\n                           ^\n\n[SQL: SELECT oi.id AS item_id, p.title AS product, oi.quantity, oi.unit_price, oi.status AS item_status,\n                   s.delivered_at,\n                   CASE WHEN s.delivered_at IS NOT NULL\n                             AND s.delivered_at > NOW() - INTERVAL '30 days'\n                        THEN 'eligible' ELSE 'expired'\n                   ",
+      "scores": {
+        "table_discovery": 4,
+        "sql_correctness": 1.0,
+        "result_accuracy": 1.0,
+        "response_quality": 1.0
+      }
+    },
+    {
+      "scenario_id": "C3",
+      "agent_type": "care",
+      "mode": "dbook",
+      "question": "Escalate ticket #8901. This customer has had 3 tickets in 2 weeks. Pull the full ticket history and all messages for context.",
+      "difficulty": "hard",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "support.ticket_messages",
+        "support.tickets"
+      ],
+      "sql_generated": "SELECT t.id AS ticket_id, t.subject, t.status, t.priority, t.category,\n                   t.channel, t.created_at,\n                   tm.body, tm.sender_type, tm.created_at AS message_at\n            FROM support.tickets t\n            LEFT JOIN support.ticket_messages tm ON tm.ticket_id = t.id\n            WHERE t.account_id = (SELECT account_id FROM support.tickets WHERE id = 8901)\n              AND t.created_at >= NOW() - INTERVAL '14 days'\n            ORDER BY t.created_at DESC, tm.created_at ASC",
+      "sql_executed_ok": true,
+      "query_results_count": 8,
+      "response_text": "Found 8 result(s).\nColumns: body, category, channel, created_at, message_at, priority, sender_type, status, subject, ticket_id\nRow 1:\n  ticket_id: 8901\n  subject: Where is my order #34567?\n  status: open\n  priority: high\n  category: shipping\n  channel: web\n  created_at: 2026-04-02 18:46:15.357014+00:00\n  body: Course language rest idea majority total plant. Bed of start before will manager beyond yet.\n  sender_type: system\n  message_at: 2025-06-09 00:43:55.669515+00:00\nRow 2:\n  ticket_id: 8901\n ",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 4,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "C3",
+      "agent_type": "care",
+      "mode": "no_dbook",
+      "question": "Escalate ticket #8901. This customer has had 3 tickets in 2 weeks. Pull the full ticket history and all messages for context.",
+      "difficulty": "hard",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "support.tickets"
+      ],
+      "sql_generated": "SELECT t.id AS ticket_id, t.subject, t.status, t.priority, t.category,\n                   t.channel, t.created_at,\n                   tm.body, tm.sender_type, tm.created_at AS message_at\n            FROM support.tickets t\n            WHERE t.account_id = (SELECT account_id FROM support.tickets WHERE id = 8901)\n              AND t.created_at >= NOW() - INTERVAL '14 days'\n            ORDER BY t.created_at DESC, tm.created_at ASC",
+      "sql_executed_ok": false,
+      "query_results_count": 0,
+      "response_text": "Error: (psycopg2.errors.UndefinedTable) missing FROM-clause entry for table \"tm\"\nLINE 3:                    tm.body, tm.sender_type, tm.created_at AS...\n                           ^\n\n[SQL: SELECT t.id AS ticket_id, t.subject, t.status, t.priority, t.category,\n                   t.channel, t.created_at,\n                   tm.body, tm.sender_type, tm.created_at AS message_at\n            FROM support.tickets t\n            WHERE t.account_id = (SELECT account_id FROM support.tickets WHERE id = 8901)",
+      "scores": {
+        "table_discovery": 3,
+        "sql_correctness": 1.0,
+        "result_accuracy": 1.0,
+        "response_quality": 1.0
+      }
+    },
+    {
+      "scenario_id": "C4",
+      "agent_type": "care",
+      "mode": "dbook",
+      "question": "Verify customer identity: they claim their email is alice@example.com. Check the account exists, show recent orders, and payment methods on file.",
+      "difficulty": "easy",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "customers.accounts",
+        "customers.login_history",
+        "customers.payment_methods",
+        "orders.orders"
+      ],
+      "sql_generated": "SELECT a.id, a.name, a.email, a.phone, a.status, a.tier,\n                   pm.type AS payment_type, pm.provider, pm.card_last_four,\n                   (SELECT COUNT(*) FROM orders.orders o\n                    WHERE o.account_id = a.id\n                      AND o.placed_at > NOW() - INTERVAL '90 days') AS recent_orders,\n                   (SELECT login_at FROM customers.login_history lh\n                    WHERE lh.account_id = a.id\n                    ORDER BY lh.login_at DESC LIMIT 1) AS last_login\n            FROM customers.accounts a\n            LEFT JOIN customers.payment_methods pm ON pm.account_id = a.id AND pm.is_default = true\n            WHERE a.email = 'alice@example.com'",
+      "sql_executed_ok": true,
+      "query_results_count": 2,
+      "response_text": "Found 2 result(s).\nColumns: card_last_four, email, id, last_login, name, payment_type, phone, provider, recent_orders, status, tier\nRow 1:\n  id: 4521\n  name: Alice Johnson\n  email: alice@example.com\n  phone: +1-555-0101\n  status: active\n  tier: prime\n  payment_type: credit_card\n  provider: visa\n  card_last_four: 4242\n  recent_orders: 5\n  last_login: 2025-12-22 10:25:40.448792+00:00\nRow 2:\n  id: 4521\n  name: Alice Johnson\n  email: alice@example.com\n  phone: +1-555-0101\n  status: active\n  tier: pr",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 4,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "C4",
+      "agent_type": "care",
+      "mode": "no_dbook",
+      "question": "Verify customer identity: they claim their email is alice@example.com. Check the account exists, show recent orders, and payment methods on file.",
+      "difficulty": "easy",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "customers.accounts",
+        "customers.login_history",
+        "customers.payment_methods",
+        "orders.orders"
+      ],
+      "sql_generated": "SELECT a.id, a.name, a.email, a.phone, a.status, a.tier,\n                   pm.type AS payment_type, pm.provider, pm.card_last_four,\n                   (SELECT COUNT(*) FROM orders.orders o\n                    WHERE o.account_id = a.id\n                      AND o.placed_at > NOW() - INTERVAL '90 days') AS recent_orders,\n                   (SELECT login_at FROM customers.login_history lh\n                    WHERE lh.account_id = a.id\n                    ORDER BY lh.login_at DESC LIMIT 1) AS last_login\n            FROM customers.accounts a\n            LEFT JOIN customers.payment_methods pm ON pm.account_id = a.id AND pm.is_default = true\n            WHERE a.email = 'alice@example.com'",
+      "sql_executed_ok": true,
+      "query_results_count": 2,
+      "response_text": "Found 2 result(s).\nColumns: card_last_four, email, id, last_login, name, payment_type, phone, provider, recent_orders, status, tier\nRow 1:\n  id: 4521\n  name: Alice Johnson\n  email: alice@example.com\n  phone: +1-555-0101\n  status: active\n  tier: prime\n  payment_type: credit_card\n  provider: visa\n  card_last_four: 4242\n  recent_orders: 5\n  last_login: 2025-12-22 10:25:40.448792+00:00\nRow 2:\n  id: 4521\n  name: Alice Johnson\n  email: alice@example.com\n  phone: +1-555-0101\n  status: active\n  tier: pr",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 4,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "C5",
+      "agent_type": "care",
+      "mode": "dbook",
+      "question": "Customer asks 'why was I charged twice?' Find all payments for customer #4521's most recent order. Show amounts, dates, statuses, and processor references.",
+      "difficulty": "medium",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "billing.invoices",
+        "billing.payments",
+        "orders.orders"
+      ],
+      "sql_generated": "SELECT p.id AS payment_id, p.amount, p.status, p.processed_at,\n                   p.processor_ref, p.failure_reason, p.currency,\n                   i.invoice_number, o.id AS order_id\n            FROM billing.payments p\n            JOIN billing.invoices i ON p.invoice_id = i.id\n            JOIN orders.orders o ON i.order_id = o.id\n            WHERE o.id = (\n                SELECT id FROM orders.orders\n                WHERE account_id = 4521\n                ORDER BY placed_at DESC LIMIT 1\n            )\n            ORDER BY p.processed_at",
+      "sql_executed_ok": true,
+      "query_results_count": 5,
+      "response_text": "Found 5 result(s).\nColumns: amount, currency, failure_reason, invoice_number, order_id, payment_id, processed_at, processor_ref, status\nRow 1:\n  payment_id: 10718\n  amount: 169.88\n  status: failed\n  processed_at: 2025-08-10 17:23:42.087870+00:00\n  processor_ref: be58dd70-44ed-432d-a03d-\n  failure_reason: Nor arrive hundred go learn just. Talk by community enjoy end catch.\n  currency: USD\n  invoice_number: INV-000828\n  order_id: 78234\nRow 2:\n  payment_id: 40614\n  amount: 373.49\n  status: failed\n ",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "C5",
+      "agent_type": "care",
+      "mode": "no_dbook",
+      "question": "Customer asks 'why was I charged twice?' Find all payments for customer #4521's most recent order. Show amounts, dates, statuses, and processor references.",
+      "difficulty": "medium",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [],
+      "sql_generated": "SELECT p.id AS payment_id, p.amount, p.status, p.processed_at,\n                   p.processor_ref, p.failure_reason, p.currency,\n                   i.invoice_number, o.id AS order_id\n            FROM payments p\n            JOIN invoices i ON p.invoice_id = i.id\n            JOIN orders o ON i.order_id = o.id\n            WHERE o.id = (\n                SELECT id FROM orders\n                WHERE account_id = 4521\n                ORDER BY placed_at DESC LIMIT 1\n            )\n            ORDER BY p.processed_at",
+      "sql_executed_ok": false,
+      "query_results_count": 0,
+      "response_text": "Error: (psycopg2.errors.UndefinedTable) relation \"payments\" does not exist\nLINE 4:             FROM payments p\n                         ^\n\n[SQL: SELECT p.id AS payment_id, p.amount, p.status, p.processed_at,\n                   p.processor_ref, p.failure_reason, p.currency,\n                   i.invoice_number, o.id AS order_id\n            FROM payments p\n            JOIN invoices i ON p.invoice_id = i.id\n            JOIN orders o ON i.order_id = o.id\n            WHERE o.id = (\n                SEL",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 1.0,
+        "result_accuracy": 1.0,
+        "response_quality": 1.0
+      }
+    },
+    {
+      "scenario_id": "S1",
+      "agent_type": "sales",
+      "mode": "dbook",
+      "question": "Customer is browsing the Electronics category. Show the top 10 highest-rated products that are currently in stock.",
+      "difficulty": "hard",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.categories",
+        "catalog.inventory",
+        "catalog.products",
+        "catalog.reviews"
+      ],
+      "sql_generated": "SELECT p.id, p.title, p.price,\n                   AVG(r.rating) AS avg_rating, COUNT(r.id) AS review_count,\n                   SUM(ci.quantity - ci.reserved) AS total_available\n            FROM catalog.products p\n            JOIN catalog.categories c ON p.category_id = c.id\n            LEFT JOIN catalog.reviews r ON r.product_id = p.id\n            LEFT JOIN catalog.inventory ci ON ci.product_id = p.id\n            WHERE (c.name ILIKE '%electronics%' OR c.path ILIKE '%Electronics%')\n              AND p.status = 'active'\n            GROUP BY p.id\n            HAVING SUM(ci.quantity - ci.reserved) > 0\n            ORDER BY avg_rating DESC NULLS LAST\n            LIMIT 10",
+      "sql_executed_ok": true,
+      "query_results_count": 1,
+      "response_text": "Found 1 result(s).\nColumns: avg_rating, id, price, review_count, title, total_available\nRow 1:\n  id: 502\n  title: Sony WH-CH520 Wireless Headphones\n  price: 79.99\n  avg_rating: 4.5000000000000000\n  review_count: 16\n  total_available: 388",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 3,
+        "response_quality": 4
+      }
+    },
+    {
+      "scenario_id": "S1",
+      "agent_type": "sales",
+      "mode": "no_dbook",
+      "question": "Customer is browsing the Electronics category. Show the top 10 highest-rated products that are currently in stock.",
+      "difficulty": "hard",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.categories",
+        "catalog.inventory",
+        "catalog.products"
+      ],
+      "sql_generated": "SELECT p.id, p.title, p.price,\n                   AVG(r.rating) AS avg_rating, COUNT(r.id) AS review_count,\n                   SUM(ci.quantity - ci.reserved) AS total_available\n            FROM catalog.products p\n            JOIN catalog.categories c ON p.category_id = c.id\n            LEFT JOIN catalog.inventory ci ON ci.product_id = p.id\n            WHERE (c.name ILIKE '%electronics%' OR c.path ILIKE '%Electronics%')\n              AND p.status = 'enabled'\n            GROUP BY p.id\n            HAVING SUM(ci.quantity - ci.reserved) > 0\n            ORDER BY avg_rating DESC NULLS LAST\n            LIMIT 10",
+      "sql_executed_ok": false,
+      "query_results_count": 0,
+      "response_text": "Error: (psycopg2.errors.UndefinedTable) missing FROM-clause entry for table \"r\"\nLINE 2:                    AVG(r.rating) AS avg_rating, COUNT(r.id) ...\n                               ^\n\n[SQL: SELECT p.id, p.title, p.price,\n                   AVG(r.rating) AS avg_rating, COUNT(r.id) AS review_count,\n                   SUM(ci.quantity - ci.reserved) AS total_available\n            FROM catalog.products p\n            JOIN catalog.categories c ON p.category_id = c.id\n            LEFT JOIN catalog.inv",
+      "scores": {
+        "table_discovery": 4,
+        "sql_correctness": 1.0,
+        "result_accuracy": 1.0,
+        "response_quality": 1.0
+      }
+    },
+    {
+      "scenario_id": "S2",
+      "agent_type": "sales",
+      "mode": "dbook",
+      "question": "Check if product with ASIN B00X4WHP5E is available. Show inventory levels across all warehouses, reserved quantity, and reorder status.",
+      "difficulty": "easy",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.inventory",
+        "catalog.products",
+        "warehouse.warehouses"
+      ],
+      "sql_generated": "SELECT w.name AS warehouse_name, w.code AS warehouse_code,\n                   ci.quantity, ci.reserved,\n                   ci.quantity - ci.reserved AS available,\n                   ci.reorder_point,\n                   CASE WHEN ci.quantity - ci.reserved <= ci.reorder_point\n                        THEN 'reorder needed' ELSE 'sufficient'\n                   END AS stock_status\n            FROM catalog.products p\n            JOIN catalog.inventory ci ON ci.product_id = p.id\n            JOIN warehouse.warehouses w ON ci.warehouse_id = w.id\n            WHERE p.asin = 'B00X4WHP5E'\n            ORDER BY w.name",
+      "sql_executed_ok": true,
+      "query_results_count": 8,
+      "response_text": "Found 8 result(s).\nColumns: available, quantity, reorder_point, reserved, stock_status, warehouse_code, warehouse_name\nRow 1:\n  warehouse_name: Atlanta Fulfillment Center\n  warehouse_code: ATL\n  quantity: 81\n  reserved: 129\n  available: -48\n  reorder_point: 25\n  stock_status: reorder needed\nRow 2:\n  warehouse_name: Chicago Fulfillment Center\n  warehouse_code: ORD\n  quantity: 120\n  reserved: 10\n  available: 110\n  reorder_point: 10\n  stock_status: sufficient\nRow 3:\n  warehouse_name: Dallas Fulfill",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 4,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "S2",
+      "agent_type": "sales",
+      "mode": "no_dbook",
+      "question": "Check if product with ASIN B00X4WHP5E is available. Show inventory levels across all warehouses, reserved quantity, and reorder status.",
+      "difficulty": "easy",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.inventory",
+        "catalog.products",
+        "warehouse.warehouses"
+      ],
+      "sql_generated": "SELECT w.name AS warehouse_name, w.code AS warehouse_code,\n                   ci.quantity, ci.reserved,\n                   ci.quantity - ci.reserved AS available,\n                   ci.reorder_point,\n                   CASE WHEN ci.quantity - ci.reserved <= ci.reorder_point\n                        THEN 'reorder needed' ELSE 'sufficient'\n                   END AS stock_status\n            FROM catalog.products p\n            JOIN catalog.inventory ci ON ci.product_id = p.id\n            JOIN warehouse.warehouses w ON ci.warehouse_id = w.id\n            WHERE p.asin = 'B00X4WHP5E'\n            ORDER BY w.name",
+      "sql_executed_ok": true,
+      "query_results_count": 8,
+      "response_text": "Found 8 result(s).\nColumns: available, quantity, reorder_point, reserved, stock_status, warehouse_code, warehouse_name\nRow 1:\n  warehouse_name: Atlanta Fulfillment Center\n  warehouse_code: ATL\n  quantity: 81\n  reserved: 129\n  available: -48\n  reorder_point: 25\n  stock_status: reorder needed\nRow 2:\n  warehouse_name: Chicago Fulfillment Center\n  warehouse_code: ORD\n  quantity: 120\n  reserved: 10\n  available: 110\n  reorder_point: 10\n  stock_status: sufficient\nRow 3:\n  warehouse_name: Dallas Fulfill",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 4,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "S3",
+      "agent_type": "sales",
+      "mode": "dbook",
+      "question": "Customer has items in cart #9876. Calculate the subtotal, check if all items are in stock, and estimate tax based on applicable rates.",
+      "difficulty": "medium",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.inventory",
+        "catalog.products",
+        "orders.cart_items"
+      ],
+      "sql_generated": "SELECT ci.product_id, p.title, ci.quantity, ci.unit_price,\n                   ci.quantity * ci.unit_price AS line_total,\n                   COALESCE(SUM(inv.quantity - inv.reserved), 0) AS total_stock,\n                   CASE WHEN COALESCE(SUM(inv.quantity - inv.reserved), 0) >= ci.quantity\n                        THEN 'in stock' ELSE 'insufficient'\n                   END AS stock_status\n            FROM orders.cart_items ci\n            JOIN catalog.products p ON ci.product_id = p.id\n            LEFT JOIN catalog.inventory inv ON inv.product_id = p.id\n            WHERE ci.cart_id = 9876\n            GROUP BY ci.id, ci.product_id, p.title, ci.quantity, ci.unit_price",
+      "sql_executed_ok": true,
+      "query_results_count": 7,
+      "response_text": "Found 7 result(s).\nColumns: line_total, product_id, quantity, stock_status, title, total_stock, unit_price\nRow 1:\n  product_id: 234\n  title: Sony WH-1000XM5\n  quantity: 1\n  unit_price: 348.00\n  line_total: 348.00\n  total_stock: -33\n  stock_status: insufficient\nRow 2:\n  product_id: 235\n  title: Anker USB-C Cable 3-pack\n  quantity: 2\n  unit_price: 15.99\n  line_total: 31.98\n  total_stock: 0\n  stock_status: insufficient\nRow 3:\n  product_id: 236\n  title: Logitech MX Keys\n  quantity: 1\n  unit_price: 1",
+      "scores": {
+        "table_discovery": 4,
+        "sql_correctness": 4.0,
+        "result_accuracy": 4,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "S3",
+      "agent_type": "sales",
+      "mode": "no_dbook",
+      "question": "Customer has items in cart #9876. Calculate the subtotal, check if all items are in stock, and estimate tax based on applicable rates.",
+      "difficulty": "medium",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [],
+      "sql_generated": "SELECT ci.product_id, p.title, ci.quantity, ci.unit_price,\n                   ci.quantity * ci.unit_price AS line_total,\n                   COALESCE(SUM(inv.quantity - inv.reserved), 0) AS total_stock,\n                   CASE WHEN COALESCE(SUM(inv.quantity - inv.reserved), 0) >= ci.quantity\n                        THEN 'in stock' ELSE 'insufficient'\n                   END AS stock_status\n            FROM cart_items ci\n            JOIN products p ON ci.product_id = p.id\n            LEFT JOIN inventory inv ON inv.product_id = p.id\n            WHERE ci.cart_id = 9876\n            GROUP BY ci.id, ci.product_id, p.title, ci.quantity, ci.unit_price",
+      "sql_executed_ok": false,
+      "query_results_count": 0,
+      "response_text": "Error: (psycopg2.errors.UndefinedTable) relation \"cart_items\" does not exist\nLINE 7:             FROM cart_items ci\n                         ^\n\n[SQL: SELECT ci.product_id, p.title, ci.quantity, ci.unit_price,\n                   ci.quantity * ci.unit_price AS line_total,\n                   COALESCE(SUM(inv.quantity - inv.reserved), 0) AS total_stock,\n                   CASE WHEN COALESCE(SUM(inv.quantity - inv.reserved), 0) >= ci.quantity\n                        THEN 'in stock' ELSE 'insufficient",
+      "scores": {
+        "table_discovery": 4,
+        "sql_correctness": 1.0,
+        "result_accuracy": 1.0,
+        "response_quality": 1.0
+      }
+    },
+    {
+      "scenario_id": "S4",
+      "agent_type": "sales",
+      "mode": "dbook",
+      "question": "Find products that are frequently bought together with product #234. Use order history to find co-occurring products, ranked by frequency.",
+      "difficulty": "hard",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.products",
+        "orders.order_items"
+      ],
+      "sql_generated": "SELECT p.id, p.title, p.price, COUNT(*) AS co_occurrence\n            FROM orders.order_items oi2\n            JOIN catalog.products p ON oi2.product_id = p.id\n            WHERE oi2.order_id IN (\n                SELECT oi.order_id FROM orders.order_items oi WHERE oi.product_id = 234\n            )\n            AND oi2.product_id != 234\n            GROUP BY p.id, p.title, p.price\n            ORDER BY co_occurrence DESC\n            LIMIT 10",
+      "sql_executed_ok": true,
+      "query_results_count": 10,
+      "response_text": "Found 10 result(s).\nColumns: co_occurrence, id, price, title\nRow 1:\n  id: 526\n  title: Traditional best chance TV within group.\n  price: 209.56\n  co_occurrence: 1\nRow 2:\n  id: 542\n  title: Understand glass quickly dinner nearly.\n  price: 47.75\n  co_occurrence: 1\nRow 3:\n  id: 676\n  title: Reality yard though describe miss mind.\n  price: 237.04\n  co_occurrence: 1\n... and 7 more rows",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 3,
+        "response_quality": 3
+      }
+    },
+    {
+      "scenario_id": "S4",
+      "agent_type": "sales",
+      "mode": "no_dbook",
+      "question": "Find products that are frequently bought together with product #234. Use order history to find co-occurring products, ranked by frequency.",
+      "difficulty": "hard",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.products",
+        "orders.order_items"
+      ],
+      "sql_generated": "SELECT p.id, p.title, p.price, COUNT(*) AS co_occurrence\n            FROM orders.order_items oi2\n            JOIN catalog.products p ON oi2.product_id = p.id\n            WHERE oi2.order_id IN (\n                SELECT oi.order_id FROM orders.order_items oi WHERE oi.product_id = 234\n            )\n            AND oi2.product_id != 234\n            GROUP BY p.id, p.title, p.price\n            ORDER BY co_occurrence DESC\n            LIMIT 10",
+      "sql_executed_ok": true,
+      "query_results_count": 10,
+      "response_text": "Found 10 result(s).\nColumns: co_occurrence, id, price, title\nRow 1:\n  id: 526\n  title: Traditional best chance TV within group.\n  price: 209.56\n  co_occurrence: 1\nRow 2:\n  id: 542\n  title: Understand glass quickly dinner nearly.\n  price: 47.75\n  co_occurrence: 1\nRow 3:\n  id: 676\n  title: Reality yard though describe miss mind.\n  price: 237.04\n  co_occurrence: 1\n... and 7 more rows",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 3,
+        "response_quality": 3
+      }
+    },
+    {
+      "scenario_id": "S5",
+      "agent_type": "sales",
+      "mode": "dbook",
+      "question": "Customer is searching for 'wireless headphones under $100'. Find matching products with their average review ratings.",
+      "difficulty": "medium",
+      "files_read": [],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.brands",
+        "catalog.products",
+        "catalog.reviews"
+      ],
+      "sql_generated": "SELECT p.id, p.title, p.price, b.name AS brand,\n                   AVG(r.rating) AS avg_rating, COUNT(r.id) AS review_count\n            FROM catalog.products p\n            LEFT JOIN catalog.brands b ON p.brand_id = b.id\n            LEFT JOIN catalog.reviews r ON r.product_id = p.id\n            WHERE (p.title ILIKE '%wireless%headphone%'\n                   OR p.description ILIKE '%wireless%headphone%')\n              AND p.price < 100\n              AND p.status = 'active'\n            GROUP BY p.id, p.title, p.price, b.name\n            ORDER BY avg_rating DESC NULLS LAST, review_count DESC",
+      "sql_executed_ok": true,
+      "query_results_count": 2,
+      "response_text": "Found 2 result(s).\nColumns: avg_rating, brand, id, price, review_count, title\nRow 1:\n  id: 502\n  title: Sony WH-CH520 Wireless Headphones\n  price: 79.99\n  brand: Sony\n  avg_rating: 4.5000000000000000\n  review_count: 4\nRow 2:\n  id: 501\n  title: JBL Tune 520BT Wireless Headphones\n  price: 49.95\n  brand: JBL\n  avg_rating: 3.0000000000000000\n  review_count: 5",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    },
+    {
+      "scenario_id": "S5",
+      "agent_type": "sales",
+      "mode": "no_dbook",
+      "question": "Customer is searching for 'wireless headphones under $100'. Find matching products with their average review ratings.",
+      "difficulty": "medium",
+      "files_read": [
+        "baseline.sql"
+      ],
+      "tokens_consumed": 0,
+      "tables_discovered": [
+        "catalog.brands",
+        "catalog.products",
+        "catalog.reviews"
+      ],
+      "sql_generated": "SELECT p.id, p.title, p.price, b.name AS brand,\n                   AVG(r.rating) AS avg_rating, COUNT(r.id) AS review_count\n            FROM catalog.products p\n            LEFT JOIN catalog.brands b ON p.brand_id = b.id\n            LEFT JOIN catalog.reviews r ON r.product_id = p.id\n            WHERE (p.title LIKE '%wireless%headphone%'\n                   OR p.description LIKE '%wireless%headphone%')\n              AND p.price < 100\n              AND p.status = 'active'\n            GROUP BY p.id, p.title, p.price, b.name\n            ORDER BY avg_rating DESC NULLS LAST, review_count DESC",
+      "sql_executed_ok": true,
+      "query_results_count": 2,
+      "response_text": "Found 2 result(s).\nColumns: avg_rating, brand, id, price, review_count, title\nRow 1:\n  id: 502\n  title: Sony WH-CH520 Wireless Headphones\n  price: 79.99\n  brand: Sony\n  avg_rating: 4.5000000000000000\n  review_count: 4\nRow 2:\n  id: 501\n  title: JBL Tune 520BT Wireless Headphones\n  price: 49.95\n  brand: JBL\n  avg_rating: 3.0000000000000000\n  review_count: 5",
+      "scores": {
+        "table_discovery": 5,
+        "sql_correctness": 5.0,
+        "result_accuracy": 5,
+        "response_quality": 5
+      }
+    }
+  ]
+}

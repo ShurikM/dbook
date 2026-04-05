@@ -1,0 +1,88 @@
+# Row counts for benchmark data seeding
+# Total: ~1.2M rows, ~1GB on disk
+# Deterministic: Faker seed 42
+
+volumes:
+  # Customers schema
+  customers.accounts: 10000
+  customers.addresses: 15000
+  customers.payment_methods: 12000
+  customers.preferences: 10000
+  customers.wishlists: 3000
+  customers.wishlist_items: 8000
+  customers.login_history: 50000
+
+  # Catalog schema
+  catalog.brands: 150
+  catalog.categories: 200
+  catalog.products: 5000
+  catalog.product_images: 12000
+  catalog.reviews: 25000
+  catalog.product_attributes: 20000
+  catalog.price_history: 10000
+  catalog.product_tags: 8000
+  catalog.related_products: 10000
+  catalog.inventory: 15000
+
+  # Orders schema
+  orders.carts: 8000
+  orders.cart_items: 20000
+  orders.orders: 50000
+  orders.order_items: 150000
+  orders.shipments: 45000
+  orders.returns: 5000
+  orders.order_status_history: 100000
+  orders.order_notes: 15000
+  orders.saved_for_later: 5000
+  orders.order_coupons: 8000
+
+  # Billing schema
+  billing.promotions: 100
+  billing.tax_rates: 50
+  billing.billing_accounts: 1000
+  billing.invoices: 50000
+  billing.payments: 55000
+  billing.refunds: 5000
+  billing.subscriptions: 3000
+  billing.subscription_payments: 15000
+  billing.gift_cards: 2000
+  billing.gift_card_transactions: 5000
+  billing.credit_notes: 1000
+  billing.payment_disputes: 500
+  billing.ledger_entries: 80000
+
+  # Analytics schema
+  analytics.sessions: 40000
+  analytics.page_views: 200000
+  analytics.search_queries: 30000
+  analytics.click_events: 50000
+  analytics.conversion_funnels: 10
+  analytics.daily_metrics: 3650
+  analytics.ab_tests: 50
+  analytics.recommendations: 20000
+  analytics.product_impressions: 100000
+  analytics.cohort_analysis: 365
+
+  # Warehouse schema
+  warehouse.warehouses: 8
+  warehouse.locations: 500
+  warehouse.stock: 10000
+  warehouse.suppliers: 50
+  warehouse.purchase_orders: 2000
+  warehouse.purchase_order_items: 6000
+  warehouse.transfers: 500
+  warehouse.transfer_items: 1500
+  warehouse.shipping_rates: 200
+  warehouse.picking_lists: 45000
+
+  # Support schema
+  support.teams: 5
+  support.agents: 30
+  support.sla_policies: 4
+  support.tickets: 5000
+  support.ticket_messages: 15000
+  support.faq_articles: 100
+  support.escalations: 500
+  support.macros: 50
+  support.knowledge_base: 200
+  support.ticket_tags: 8000

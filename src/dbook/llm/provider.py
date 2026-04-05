@@ -14,8 +14,8 @@ import json
 import logging
 from typing import Protocol, runtime_checkable
 
-from lib.llm import call_llm as _agentlib_call_llm  # type: ignore[import-untyped]
-from lib.llm import LLMConfig as _AgentlibLLMConfig  # type: ignore[import-untyped]
+from agentlib.llm import call_llm as _agentlib_call_llm  # type: ignore[import-untyped]
+from agentlib.llm import LLMConfig as _AgentlibLLMConfig  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 

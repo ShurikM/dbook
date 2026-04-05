@@ -8,7 +8,7 @@ from pathlib import Path
 
 def count_tokens(text: str) -> int:
     """Count tokens using agentlib's chunker."""
-    from lib.chunker import count_tokens as _agentlib_count  # type: ignore[import-untyped]
+    from agentlib.chunker import count_tokens as _agentlib_count  # type: ignore[import-untyped]
     return _agentlib_count(text)
 
 

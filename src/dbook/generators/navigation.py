@@ -133,25 +133,26 @@ def generate_navigation(
     lines.append("| Table | Rows | Key Columns | References | Domain | Description | ~Tok |")
     lines.append("|-------|------|-------------|------------|--------|-------------|------|")
 
-    for _schema_name, schema in sorted(book.schemas.items()):
+    for schema_name, schema in sorted(book.schemas.items()):
         for table_name, table in sorted(schema.tables.items()):
+            qualified_name = f"{schema_name}.{table_name}"
             rows = f"{table.row_count:,}" if table.row_count is not None else "-"
             key_cols = _key_columns(table, max_cols=6)
             refs = _references(table)
             desc = _description(table, book)
             tok = _estimate_table_tokens(table)
             domain = table.domain or "-"
-            lines.append(f"| {table_name} | {rows} | {key_cols} | {refs} | {domain} | {desc} | {tok} |")
+            lines.append(f"| {qualified_name} | {rows} | {key_cols} | {refs} | {domain} | {desc} | {tok} |")
 
     lines.append("")
 
     # PII sensitivity summary (if any PII detected)
     pii_tables: list[tuple[str, list[str]]] = []
-    for _schema_name, schema in sorted(book.schemas.items()):
+    for schema_name, schema in sorted(book.schemas.items()):
         for table_name, table in sorted(schema.tables.items()):
             pii_col_names = [col.name for col in table.columns if col.pii_type]
             if pii_col_names:
-                pii_tables.append((table_name, pii_col_names))
+                pii_tables.append((f"{schema_name}.{table_name}", pii_col_names))
 
     if pii_tables:
         parts = [f"{tname} ({', '.join(cols)})" for tname, cols in pii_tables]
@@ -175,9 +176,17 @@ def generate_navigation(
             lines.append(f"| {metric.name} | `{metric.sql}` | {metric.description} |")
         lines.append("")
 
+    # Common query patterns (multi-table join paths)
+    patterns = _query_patterns(book)
+    if patterns:
+        lines.append("## Common Query Patterns")
+        for p in patterns:
+            lines.append(f"- {p}")
+        lines.append("")
+
     # Navigate instructions
     lines.append("## Navigate")
-    lines.append("1. Scan the table above to find what you need")
+    lines.append("1. Scan the table above — names are schema-qualified (e.g. `catalog.inventory`)")
     lines.append("2. Check the `~Tok` column to budget your read")
     lines.append("3. Read `schemas/{schema}/{table}.md` for full details")
     lines.append("")
@@ -274,3 +283,92 @@ def _description(table: TableMeta, book: BookMeta | None = None, max_len: int = 
     if len(desc) > effective_max:
         desc = desc[: effective_max - 1] + "\u2026"
     return desc
+
+
+def _query_patterns(book: BookMeta, max_patterns: int = 8) -> list[str]:
+    """Find multi-table FK chains (length 2-3 hops) for common join guidance.
+
+    Returns concise lines like:
+      ``payments → invoices (invoice_id) → orders (order_id) → users (user_id)``
+    """
+    # Build schema-qualified FK adjacency: child -> [(parent_qualified, fk_col)]
+    # "child references parent" means child has FK pointing to parent.
+    adj: dict[str, list[tuple[str, str]]] = {}  # qualified_child -> [(qualified_parent, col)]
+    all_qualified: set[str] = set()
+
+    for schema_name, schema in book.schemas.items():
+        for table_name, table in schema.tables.items():
+            qname = f"{schema_name}.{table_name}"
+            all_qualified.add(qname)
+            adj.setdefault(qname, [])
+            for fk in table.foreign_keys:
+                ref_schema = fk.referred_schema or schema_name
+                ref_qualified = f"{ref_schema}.{fk.referred_table}"
+                col = ", ".join(fk.columns)
+                adj[qname].append((ref_qualified, col))
+
+    # Find chains of length >= 2 hops by DFS from every table
+    chains: list[list[tuple[str, str]]] = []  # each chain: [(table, fk_col), ...]
+
+    for start in all_qualified:
+        parents = adj.get(start, [])
+        if not parents:
+            continue
+        for parent, col in parents:
+            # 2-hop: start --(col)--> parent --(col2)--> grandparent
+            grandparents = adj.get(parent, [])
+            for gp, col2 in grandparents:
+                if gp == start:
+                    continue  # skip cycles
+                chain2: list[tuple[str, str]] = [
+                    (start, col), (parent, col2), (gp, ""),
+                ]
+                chains.append(chain2)
+                # 3-hop: extend one more level
+                for ggp, col3 in adj.get(gp, []):
+                    if ggp in (start, parent):
+                        continue
+                    chain3: list[tuple[str, str]] = [
+                        (start, col), (parent, col2), (gp, col3), (ggp, ""),
+                    ]
+                    chains.append(chain3)
+
+    if not chains:
+        return []
+
+    # Score: longer chains first, then alphabetical for stability
+    chains.sort(key=lambda c: (-len(c), c[0][0]))
+
+    # Deduplicate: keep only longest chain for each table-set, and remove
+    # chains whose table-set is a strict subset of a longer chain.
+    seen_sets: set[frozenset[str]] = set()
+    unique: list[list[tuple[str, str]]] = []
+    for chain in chains:
+        tables = frozenset(t for t, _ in chain)
+        if tables not in seen_sets:
+            seen_sets.add(tables)
+            unique.append(chain)
+
+    # Remove chains that are strict subsets of longer chains
+    table_sets = [frozenset(t for t, _ in c) for c in unique]
+    filtered: list[list[tuple[str, str]]] = []
+    for i, chain in enumerate(unique):
+        ts = table_sets[i]
+        is_subset = any(
+            ts < other for j, other in enumerate(table_sets) if j != i
+        )
+        if not is_subset:
+            filtered.append(chain)
+
+    # Format each chain
+    result: list[str] = []
+    for chain in filtered[:max_patterns]:
+        parts: list[str] = []
+        for i, (table, _col) in enumerate(chain):
+            if i == 0:
+                parts.append(table)
+            else:
+                parts.append(f"{table} ({chain[i - 1][1]})")
+        result.append(" \u2192 ".join(parts))
+
+    return result
