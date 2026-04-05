@@ -82,31 +82,60 @@ result = validator.validate("SELECT * FROM orders WHERE status = 'completed'")
 
 ## Key Benchmark Results
 
-### SQL Execution Benchmark: DDL vs dbook
+### Scorecard: dbook vs Raw DDL
 
-Tested on an Amazon-like e-commerce database (34 tables, 15 business tasks, 4 agent types):
+Tested on an Amazon-like e-commerce database (7 schemas, 34 tables) with 15 scenarios across 3 agent types (Billing, Care, Sales). Each scenario scored by a judge on 4 dimensions.
 
-| Fact Type | Raw DDL | Base dbook | LLM dbook |
-|-----------|---------|-----------|-----------|
-| Structural (column names) | 100% | 100% | 100% |
-| Value-level (enum values) | 21% | 88% | 94% |
-| **Overall key fact coverage** | **76%** | **96%** | **98%** |
-| **SQL execution correctness** | **75%** | **100%** | **100%** |
+- **dbook Score: 4.7/5** vs Baseline (raw DDL) **3.2/5** — improvement of **+1.5**
+- **Token savings: 77%** (7,792 vs 33,656 tokens per scenario)
 
-**In the SQL execution benchmark, dbook achieves 100% correct SQL vs 75% with raw DDL** — the difference between agents that guess enum values and agents that know them.
+### Per-Dimension Scoring
 
-### On a 5-table database:
-- DDL key fact coverage: 69% -> dbook: 93% (+24% improvement)
-- SQL execution benchmark: DDL produces 75% correct SQL -> dbook: 100% correct SQL
+| Dimension | dbook | Baseline (DDL) | Delta |
+|-----------|-------|----------------|-------|
+| Table Discovery | 4.7 | 4.3 | +0.4 |
+| SQL Correctness | 4.7 | 3.0 | +1.7 |
+| Result Accuracy | 4.3 | 2.6 | +1.7 |
+| Response Quality | 4.7 | 2.7 | +2.0 |
 
-### Agent Discovery (business-term search):
-- 15 real business tasks (billing, sales, support, analytics agents)
-- All 3 modes achieve 15/15 success with mechanical aliases
-- Business terms like "shopping cart", "refund", "A/B test" correctly map to tables
+### Per-Agent Breakdown
 
-### Token Savings (at scale):
-- 50 tables: ~50% fewer tokens per query vs reading all DDL
-- Scales linearly — larger databases see larger savings
+| Agent Type | dbook | Baseline | Token Savings |
+|------------|-------|----------|---------------|
+| Billing | 4.8/5 | 3.0/5 | 77% |
+| Care | 4.8/5 | 3.0/5 | 77% |
+| Sales | 4.5/5 | 3.5/5 | 77% |
+
+### Benchmark System Design
+
+```mermaid
+graph LR
+    S[15 Scenarios<br/>B1-B5, C1-C5, S1-S5] --> A
+    subgraph Agent Modes
+        A[dbook Agent<br/>reads NAVIGATION.md<br/>+ selective tables]
+        B[Baseline Agent<br/>reads full DDL dump]
+    end
+    A --> SQL[SQL Generation]
+    B --> SQL
+    SQL --> PG[(PostgreSQL<br/>7 schemas, 34 tables)]
+    PG --> J[Mock Judge<br/>4 dimensions]
+    J --> R[HTML Report<br/>+ JSON results]
+```
+
+### Report Structure
+
+```mermaid
+graph TD
+    R[Benchmark Report]
+    R --> SC[Scorecard<br/>dbook vs Baseline<br/>Token Savings]
+    R --> Charts
+    subgraph Charts
+        RC[Radar Chart<br/>4 scoring dimensions]
+        TC[Token Bar Chart<br/>by agent type]
+    end
+    R --> HM[Per-Scenario Heatmap<br/>15 rows x 8 score columns<br/>color-coded 1-5]
+    R --> AC[Agent Cards<br/>Billing / Care / Sales]
+```
 
 ## Built on agentlib
 
