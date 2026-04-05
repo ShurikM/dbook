@@ -7,9 +7,13 @@ from pathlib import Path
 
 
 def count_tokens(text: str) -> int:
-    """Count tokens using agentlib's chunker."""
-    from agentlib.chunker import count_tokens as _agentlib_count  # type: ignore[import-untyped]
-    return _agentlib_count(text)
+    """Count tokens using agentlib's chunker, with a fallback estimator."""
+    try:
+        from agentlib.chunker import count_tokens as _agentlib_count  # type: ignore[import-untyped]
+        return _agentlib_count(text)
+    except (ImportError, ModuleNotFoundError):
+        # Fallback: ~4 chars per token is a reasonable approximation
+        return len(text) // 4
 
 
 @dataclass
