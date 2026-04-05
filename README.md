@@ -1,3 +1,5 @@
+[![CI](https://github.com/ShurikM/dbook/actions/workflows/ci.yml/badge.svg)](https://github.com/ShurikM/dbook/actions)
+
 # dbook — v0.3.0
 
 A metadata compiler that turns database schemas into AI-optimized documentation.
@@ -41,7 +43,7 @@ One command connects to your database, introspects every table, runs `SELECT DIS
 </p>
 
 ```bash
-pip install dbook
+pip install git+https://github.com/ShurikM/dbook.git
 dbook compile "postgresql://user:pass@host/db" --output ./my_dbook
 ```
 
@@ -140,6 +142,8 @@ The biggest gains are in SQL correctness and result accuracy -- exactly the dime
 | Care | 4.8/5 | 3.0/5 | 77% |
 | Sales | 4.5/5 | 3.5/5 | 77% |
 
+> Benchmarked against a 34-table e-commerce schema on PostgreSQL. All scores from automated test runs — see `benchmarks/` for scenarios, seed data, and reproducible results.
+
 ### Benchmark System Design
 
 <p align="center">
@@ -185,13 +189,13 @@ dbook compile "postgresql://user:pass@host/db" --output ./my_dbook
 
 ### With PII detection (marks sensitive columns, redacts sample data)
 ```bash
-pip install dbook[pii]
+pip install "dbook[pii] @ git+https://github.com/ShurikM/dbook.git"
 dbook compile "postgresql://..." --output ./my_dbook --pii
 ```
 
 ### With LLM enrichment (semantic summaries, concept aliases)
 ```bash
-pip install dbook[llm]
+pip install "dbook[llm] @ git+https://github.com/ShurikM/dbook.git"
 dbook compile "postgresql://..." --output ./my_dbook --llm --llm-provider anthropic --llm-key sk-...
 ```
 
@@ -226,9 +230,9 @@ print(result.valid, result.errors, result.warnings)
 
 | Feature | Install | Flag | What it adds |
 |---------|---------|------|-------------|
-| PII detection | `pip install dbook[pii]` | `--pii` | Column sensitivity markers, sample data redaction |
-| LLM enrichment | `pip install dbook[llm]` | `--llm` | Semantic summaries, concept aliases, schema narratives |
-| Metrics | `pip install dbook[metrics]` | `--metrics` | User-defined canonical business metrics |
+| PII detection | `pip install "dbook[pii] @ git+https://github.com/ShurikM/dbook.git"` | `--pii` | Column sensitivity markers, sample data redaction |
+| LLM enrichment | `pip install "dbook[llm] @ git+https://github.com/ShurikM/dbook.git"` | `--llm` | Semantic summaries, concept aliases, schema narratives |
+| Metrics | `pip install "dbook[metrics] @ git+https://github.com/ShurikM/dbook.git"` | `--metrics` | User-defined canonical business metrics |
 
 ## The Silver Layer Insight
 

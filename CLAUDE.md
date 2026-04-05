@@ -102,4 +102,4 @@ pytest tests/ -v -s              # Run with verbose output (see benchmark report
 - src/dbook/generators/ — Individual markdown/json generators
 - tests/conftest.py — SQLite test fixture (13 tables)
 - tests/benchmark_helpers.py — AgentSimulator, token counting, BenchmarkReport
-- PLAN.md — Full implementation plan (7 phases)
+- docs/ROADMAP.md — Full implementation plan (7 phases)
