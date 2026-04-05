@@ -1,0 +1,131 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 340" font-family="Inter, -apple-system, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="scenarioGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#d97706;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="dbookAgentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="baselineGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#64748b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#475569;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="sqlGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="pgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0284c7;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="judgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="reportGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ec4899;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#db2777;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="340" rx="16" fill="#0f1117"/>
+
+  <!-- Title -->
+  <text x="450" y="32" text-anchor="middle" fill="#e2e8f0" font-size="16" font-weight="700" letter-spacing="0.5">Benchmark System Design</text>
+
+  <!-- Scenarios box -->
+  <rect x="30" y="55" width="130" height="95" rx="10" fill="url(#scenarioGrad)" filter="url(#shadow)"/>
+  <text x="95" y="80" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">15 Scenarios</text>
+  <text x="95" y="98" text-anchor="middle" fill="#fef3c7" font-size="10">B1-B5 Billing</text>
+  <text x="95" y="113" text-anchor="middle" fill="#fef3c7" font-size="10">C1-C5 Care</text>
+  <text x="95" y="128" text-anchor="middle" fill="#fef3c7" font-size="10">S1-S5 Sales</text>
+
+  <!-- Arrow: Scenarios -> Agent Modes -->
+  <line x1="160" y1="102" x2="192" y2="82" stroke="#f59e0b" stroke-width="2"/>
+  <polygon points="189,78 196,82 189,86" fill="#f59e0b"/>
+  <line x1="160" y1="102" x2="192" y2="122" stroke="#f59e0b" stroke-width="2"/>
+  <polygon points="189,118 196,122 189,126" fill="#f59e0b"/>
+
+  <!-- Agent Modes group -->
+  <rect x="195" y="48" width="195" height="112" rx="12" fill="#1a1a2e" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="6,3"/>
+  <text x="292" y="67" text-anchor="middle" fill="#a5b4fc" font-size="10" font-weight="600" letter-spacing="0.5">AGENT MODES</text>
+
+  <!-- dbook Agent -->
+  <rect x="207" y="74" width="170" height="32" rx="8" fill="url(#dbookAgentGrad)" filter="url(#shadow)"/>
+  <text x="292" y="95" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">dbook Agent</text>
+  <text x="207" y="95" fill="#e9d5ff" font-size="7" dx="4">NAVIGATION.md + selective tables</text>
+
+  <!-- Baseline Agent -->
+  <rect x="207" y="116" width="170" height="32" rx="8" fill="url(#baselineGrad)" filter="url(#shadow)"/>
+  <text x="292" y="137" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">Baseline Agent</text>
+  <text x="207" y="137" fill="#e2e8f0" font-size="7" dx="16">reads full DDL dump</text>
+
+  <!-- Arrow: Agent Modes -> SQL -->
+  <line x1="390" y1="102" x2="425" y2="102" stroke="#8b5cf6" stroke-width="2"/>
+  <polygon points="422,97 432,102 422,107" fill="#8b5cf6"/>
+
+  <!-- SQL Generation box -->
+  <rect x="435" y="70" width="120" height="65" rx="10" fill="url(#sqlGrad)" filter="url(#shadow)"/>
+  <text x="495" y="96" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">SQL</text>
+  <text x="495" y="113" text-anchor="middle" fill="#bfdbfe" font-size="10">Generation</text>
+
+  <!-- Arrow: SQL -> PostgreSQL -->
+  <line x1="555" y1="102" x2="590" y2="102" stroke="#3b82f6" stroke-width="2"/>
+  <polygon points="587,97 597,102 587,107" fill="#3b82f6"/>
+
+  <!-- PostgreSQL box (cylinder-like) -->
+  <rect x="600" y="60" width="120" height="85" rx="10" fill="url(#pgGrad)" filter="url(#shadow)"/>
+  <ellipse cx="660" cy="70" rx="55" ry="10" fill="#38bdf8" opacity="0.4"/>
+  <text x="660" y="100" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">PostgreSQL</text>
+  <text x="660" y="117" text-anchor="middle" fill="#e0f2fe" font-size="9">7 schemas</text>
+  <text x="660" y="132" text-anchor="middle" fill="#e0f2fe" font-size="9">34 tables</text>
+
+  <!-- Arrow: PostgreSQL -> Judge -->
+  <line x1="720" y1="102" x2="755" y2="102" stroke="#0ea5e9" stroke-width="2"/>
+  <polygon points="752,97 762,102 752,107" fill="#0ea5e9"/>
+
+  <!-- Mock Judge box -->
+  <rect x="760" y="60" width="115" height="85" rx="10" fill="url(#judgeGrad)" filter="url(#shadow)"/>
+  <text x="817" y="90" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Mock Judge</text>
+  <text x="817" y="108" text-anchor="middle" fill="#bbf7d0" font-size="10">4 dimensions</text>
+  <text x="817" y="123" text-anchor="middle" fill="#bbf7d0" font-size="9">scored 1-5 each</text>
+
+  <!-- Arrow: Judge -> Report -->
+  <line x1="817" y1="145" x2="817" y2="175" stroke="#22c55e" stroke-width="2"/>
+  <polygon points="812,172 817,182 822,172" fill="#22c55e"/>
+
+  <!-- Report box -->
+  <rect x="735" y="185" width="145" height="52" rx="10" fill="url(#reportGrad)" filter="url(#shadow)"/>
+  <text x="807" y="208" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">HTML Report</text>
+  <text x="807" y="224" text-anchor="middle" fill="#fce7f3" font-size="10">+ JSON results</text>
+
+  <!-- Scoring dimensions legend -->
+  <rect x="30" y="180" width="380" height="145" rx="10" fill="#1a1a2e" stroke="#334155" stroke-width="1"/>
+  <text x="50" y="202" fill="#94a3b8" font-size="11" font-weight="600" letter-spacing="0.5">SCORING DIMENSIONS</text>
+
+  <rect x="50" y="215" width="160" height="28" rx="6" fill="#1e293b"/>
+  <text x="60" y="234" fill="#e2e8f0" font-size="10" font-weight="600">Table Discovery</text>
+  <text x="198" y="234" text-anchor="end" fill="#94a3b8" font-size="9">right tables found?</text>
+
+  <rect x="50" y="250" width="160" height="28" rx="6" fill="#1e293b"/>
+  <text x="60" y="269" fill="#e2e8f0" font-size="10" font-weight="600">SQL Correctness</text>
+  <text x="198" y="269" text-anchor="end" fill="#94a3b8" font-size="9">valid, executable?</text>
+
+  <rect x="225" y="215" width="170" height="28" rx="6" fill="#1e293b"/>
+  <text x="235" y="234" fill="#e2e8f0" font-size="10" font-weight="600">Result Accuracy</text>
+  <text x="383" y="234" text-anchor="end" fill="#94a3b8" font-size="9">correct answer?</text>
+
+  <rect x="225" y="250" width="170" height="28" rx="6" fill="#1e293b"/>
+  <text x="235" y="269" fill="#e2e8f0" font-size="10" font-weight="600">Response Quality</text>
+  <text x="383" y="269" text-anchor="end" fill="#94a3b8" font-size="9">clear explanation?</text>
+
+  <!-- Result callout -->
+  <rect x="50" y="288" width="345" height="26" rx="6" fill="#052e16" stroke="#22c55e" stroke-width="1"/>
+  <text x="222" y="306" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="700">dbook 4.7/5  vs  Baseline 3.2/5  |  77% token savings</text>
+</svg>

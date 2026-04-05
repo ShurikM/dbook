@@ -130,34 +130,15 @@ The biggest gains are in SQL correctness and result accuracy -- exactly the dime
 
 ### Benchmark System Design
 
-```mermaid
-graph LR
-    S["15 Scenarios\nB1-B5, C1-C5, S1-S5"] --> A
-    subgraph Agent Modes
-        A["dbook Agent\nreads NAVIGATION.md\n+ selective tables"]
-        B["Baseline Agent\nreads full DDL dump"]
-    end
-    A --> SQL[SQL Generation]
-    B --> SQL
-    SQL --> PG[("PostgreSQL\n7 schemas, 34 tables")]
-    PG --> J["Mock Judge\n4 dimensions"]
-    J --> R["HTML Report\n+ JSON results"]
-```
+<p align="center">
+  <img src="docs/benchmark-system.svg" alt="Benchmark System Design" width="800">
+</p>
 
 ### Report Structure
 
-```mermaid
-graph TD
-    R[Benchmark Report]
-    R --> SC["Scorecard\ndbook vs Baseline\nToken Savings"]
-    R --> Charts
-    subgraph Charts
-        RC["Radar Chart\n4 scoring dimensions"]
-        TC["Token Bar Chart\nby agent type"]
-    end
-    R --> HM["Per-Scenario Heatmap\n15 rows x 8 score columns\ncolor-coded 1-5"]
-    R --> AC["Agent Cards\nBilling / Care / Sales"]
-```
+<p align="center">
+  <img src="docs/benchmark-report.svg" alt="Benchmark Report Structure" width="800">
+</p>
 
 ## Navigation Architecture
 
