@@ -134,12 +134,6 @@ The biggest gains are in SQL correctness and result accuracy -- exactly the dime
   <img src="docs/benchmark-system.svg" alt="Benchmark System Design" width="800">
 </p>
 
-### Report Structure
-
-<p align="center">
-  <img src="docs/benchmark-report.svg" alt="Benchmark Report Structure" width="800">
-</p>
-
 ## Navigation Architecture
 
 dbook uses [agentlib's](https://github.com/barkain/agentlib) proven L0/L1/L2 layered navigation -- the same architecture that makes AI agents efficient at consuming books, applied to databases.
