@@ -132,16 +132,16 @@ The biggest gains are in SQL correctness and result accuracy -- exactly the dime
 
 ```mermaid
 graph LR
-    S[15 Scenarios<br/>B1-B5, C1-C5, S1-S5] --> A
+    S["15 Scenarios\nB1-B5, C1-C5, S1-S5"] --> A
     subgraph Agent Modes
-        A[dbook Agent<br/>reads NAVIGATION.md<br/>+ selective tables]
-        B[Baseline Agent<br/>reads full DDL dump]
+        A["dbook Agent\nreads NAVIGATION.md\n+ selective tables"]
+        B["Baseline Agent\nreads full DDL dump"]
     end
     A --> SQL[SQL Generation]
     B --> SQL
-    SQL --> PG[(PostgreSQL<br/>7 schemas, 34 tables)]
-    PG --> J[Mock Judge<br/>4 dimensions]
-    J --> R[HTML Report<br/>+ JSON results]
+    SQL --> PG[("PostgreSQL\n7 schemas, 34 tables")]
+    PG --> J["Mock Judge\n4 dimensions"]
+    J --> R["HTML Report\n+ JSON results"]
 ```
 
 ### Report Structure
@@ -149,14 +149,14 @@ graph LR
 ```mermaid
 graph TD
     R[Benchmark Report]
-    R --> SC[Scorecard<br/>dbook vs Baseline<br/>Token Savings]
+    R --> SC["Scorecard\ndbook vs Baseline\nToken Savings"]
     R --> Charts
     subgraph Charts
-        RC[Radar Chart<br/>4 scoring dimensions]
-        TC[Token Bar Chart<br/>by agent type]
+        RC["Radar Chart\n4 scoring dimensions"]
+        TC["Token Bar Chart\nby agent type"]
     end
-    R --> HM[Per-Scenario Heatmap<br/>15 rows x 8 score columns<br/>color-coded 1-5]
-    R --> AC[Agent Cards<br/>Billing / Care / Sales]
+    R --> HM["Per-Scenario Heatmap\n15 rows x 8 score columns\ncolor-coded 1-5"]
+    R --> AC["Agent Cards\nBilling / Care / Sales"]
 ```
 
 ## Navigation Architecture
