@@ -1,8 +1,16 @@
-# dbook
+# dbook — v0.3.0
 
 A metadata compiler that turns database schemas into AI-optimized documentation.
 
 > **dbook** connects to your database, introspects every table, and automatically generates structured metadata that AI agents can navigate -- enum values, data lineage, example queries, auto-detected metrics, and PII markers. One command, fully automated, no manual authoring. Agents with dbook score **4.7/5** on SQL tasks vs **3.2/5** with raw DDL, while reading **77% fewer tokens**.
+
+## What's New in 0.3.0
+
+- **Benchmark system** -- 15 real agent tasks across 3 personas (Billing, Care, Sales), each scored by a judge on 4 dimensions. Proves dbook's value quantitatively: **4.7/5** vs **3.2/5** baseline, **77% token savings**.
+- **Schema-qualified NAVIGATION.md** -- table listings include schema prefixes for unambiguous selection in multi-schema databases.
+- **Unique-key lookup examples** -- table metadata now includes `SELECT ... WHERE pk = ?` patterns so agents can write point queries without guessing.
+- **Common query patterns from FK graph** -- foreign key relationships are analyzed to generate JOIN patterns, aggregation queries, and filter-by-enum examples automatically.
+- **Python 3.12+** required. See [pyproject.toml](pyproject.toml) for full dependency details.
 
 ## The Problem
 
@@ -245,7 +253,7 @@ pip install -e ".[dev]"
 pytest tests/ -q --tb=short
 ```
 
-118 tests covering: introspection, compilation, CLI, PII detection, LLM enrichment, query validation, and realistic agent simulation benchmarks.
+139 tests covering: introspection, compilation, CLI, PII detection, LLM enrichment, query validation, and realistic agent simulation benchmarks.
 
 ## License
 

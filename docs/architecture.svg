@@ -95,7 +95,7 @@
 
   <rect x="380" y="302" width="155" height="60" rx="8" fill="#312e81" stroke="#6366f1" stroke-width="1"/>
   <text x="457" y="324" text-anchor="middle" fill="#e0e7ff" font-size="11" font-weight="600">📉 Token Savings</text>
-  <text x="457" y="342" text-anchor="middle" fill="#a5b4fc" font-size="9">50% fewer tokens at scale</text>
+  <text x="457" y="342" text-anchor="middle" fill="#a5b4fc" font-size="9">77% fewer tokens at scale</text>
   <text x="457" y="354" text-anchor="middle" fill="#a5b4fc" font-size="9">progressive navigation</text>
 
   <rect x="545" y="302" width="155" height="60" rx="8" fill="#312e81" stroke="#6366f1" stroke-width="1"/>
@@ -113,12 +113,12 @@
   <rect x="50" y="375" width="810" height="42" rx="8" fill="#0f172a" stroke="#334155" stroke-width="1"/>
   <text x="70" y="395" fill="#94a3b8" font-size="10" font-weight="600">BENCHMARK</text>
   <text x="200" y="395" fill="#94a3b8" font-size="10">DDL SQL correct: </text>
-  <text x="305" y="395" fill="#ef4444" font-size="11" font-weight="700">75%</text>
+  <text x="305" y="395" fill="#ef4444" font-size="11" font-weight="700">3.2/5</text>
   <text x="340" y="395" fill="#94a3b8" font-size="10">→ dbook: </text>
-  <text x="402" y="395" fill="#22c55e" font-size="11" font-weight="700">100%</text>
+  <text x="402" y="395" fill="#22c55e" font-size="11" font-weight="700">4.7/5</text>
   <text x="445" y="395" fill="#64748b" font-size="10">│</text>
   <text x="465" y="395" fill="#94a3b8" font-size="10">Token savings at 50 tables: </text>
-  <text x="637" y="395" fill="#22c55e" font-size="11" font-weight="700">50%</text>
+  <text x="637" y="395" fill="#22c55e" font-size="11" font-weight="700">77%</text>
   <text x="670" y="395" fill="#64748b" font-size="10">│</text>
   <text x="690" y="395" fill="#94a3b8" font-size="10">Discovery: </text>
   <text x="760" y="395" fill="#22c55e" font-size="11" font-weight="700">15/15</text>
