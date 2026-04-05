@@ -5,7 +5,8 @@ client that supports Anthropic, OpenAI, Google, xAI, and DeepSeek.  dbook
 wraps it with a stable ``LLMProvider`` protocol so that the rest of the
 codebase (enricher, CLI, tests) stays unchanged.
 
-agentlib is a hard dependency — if it is not installed, dbook will not work.
+agentlib is imported lazily so that MockProvider and other non-agentlib
+code works even when agentlib is not installed (e.g. in CI).
 """
 
 from __future__ import annotations
@@ -13,9 +14,6 @@ from __future__ import annotations
 import json
 import logging
 from typing import Protocol, runtime_checkable
-
-from agentlib.llm import call_llm as _agentlib_call_llm  # type: ignore[import-untyped]
-from agentlib.llm import LLMConfig as _AgentlibLLMConfig  # type: ignore[import-untyped]
 
 logger = logging.getLogger(__name__)
 
@@ -54,6 +52,8 @@ class AgentlibProvider:
     }
 
     def __init__(self, provider: str, api_key: str, model: str | None = None):
+        from agentlib.llm import LLMConfig as _AgentlibLLMConfig  # type: ignore[import-untyped]
+
         # Map "gemini" -> "google" for agentlib compatibility
         agentlib_provider = "google" if provider == "gemini" else provider
         self._config = _AgentlibLLMConfig(
@@ -63,6 +63,8 @@ class AgentlibProvider:
         )
 
     def complete(self, prompt: str, max_tokens: int = 500) -> str:
+        from agentlib.llm import call_llm as _agentlib_call_llm  # type: ignore[import-untyped]
+
         return _agentlib_call_llm(self._config, prompt, max_tokens=max_tokens)
 
 
