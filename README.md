@@ -162,15 +162,9 @@ agentlib is the navigation framework. dbook is the compiler that fills it with d
 
 ## Architecture
 
-```
-SQLAlchemy Inspector -> BookMeta -> Compiler -> Output Directory
-                                     |
-                      NAVIGATION.md    (table overview + lineage)
-                      schemas/
-                        {schema}/
-                          _manifest.md  (schema details + relationships)
-                          {table}.md    (columns, values, FKs, metrics, examples)
-```
+<p align="center">
+  <img src="docs/pipeline.svg" alt="dbook Compilation Pipeline" width="800">
+</p>
 
 ### Catalog Protocol
 Database-agnostic via `Catalog` protocol. Default `SQLAlchemyCatalog` supports any SQLAlchemy-compatible database. DB type auto-detected from URL.

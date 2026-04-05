@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 300" font-family="Inter, -apple-system, system-ui, sans-serif">
+  <defs>
+    <linearGradient id="dbGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3b82f6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="procGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="outGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#22c55e;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#16a34a;stop-opacity:1" />
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="300" rx="16" fill="#0f1117"/>
+
+  <!-- Title -->
+  <text x="450" y="30" text-anchor="middle" fill="#e2e8f0" font-size="15" font-weight="700" letter-spacing="0.5">dbook Compilation Pipeline</text>
+
+  <!-- ================================================================ -->
+  <!-- INPUT: Database box -->
+  <!-- ================================================================ -->
+  <rect x="20" y="60" width="150" height="90" rx="12" fill="url(#dbGrad)" filter="url(#shadow)"/>
+  <text x="95" y="93" text-anchor="middle" fill="#fff" font-size="14" font-weight="700">Database</text>
+  <text x="95" y="112" text-anchor="middle" fill="#bfdbfe" font-size="9">PostgreSQL, MySQL,</text>
+  <text x="95" y="124" text-anchor="middle" fill="#bfdbfe" font-size="9">SQLite, Snowflake,</text>
+  <text x="95" y="136" text-anchor="middle" fill="#bfdbfe" font-size="9">BigQuery</text>
+
+  <!-- Arrow: Database -> Inspector -->
+  <line x1="170" y1="105" x2="200" y2="105" stroke="#60a5fa" stroke-width="2"/>
+  <polygon points="198,100 208,105 198,110" fill="#60a5fa"/>
+
+  <!-- ================================================================ -->
+  <!-- PROCESSING: Three boxes -->
+  <!-- ================================================================ -->
+
+  <!-- SQLAlchemy Inspector -->
+  <rect x="210" y="60" width="150" height="90" rx="12" fill="url(#procGrad)" filter="url(#shadow)"/>
+  <text x="285" y="95" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">SQLAlchemy</text>
+  <text x="285" y="112" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Inspector</text>
+  <text x="285" y="130" text-anchor="middle" fill="#c4b5fd" font-size="9">introspects schema</text>
+
+  <!-- Arrow: Inspector -> BookMeta -->
+  <line x1="360" y1="105" x2="390" y2="105" stroke="#a78bfa" stroke-width="2"/>
+  <polygon points="388,100 398,105 388,110" fill="#a78bfa"/>
+
+  <!-- BookMeta -->
+  <rect x="400" y="60" width="130" height="90" rx="12" fill="url(#procGrad)" filter="url(#shadow)"/>
+  <text x="465" y="98" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">BookMeta</text>
+  <text x="465" y="116" text-anchor="middle" fill="#c4b5fd" font-size="9">structured metadata</text>
+  <text x="465" y="128" text-anchor="middle" fill="#c4b5fd" font-size="9">model</text>
+
+  <!-- Arrow: BookMeta -> Compiler -->
+  <line x1="530" y1="105" x2="555" y2="105" stroke="#a78bfa" stroke-width="2"/>
+  <polygon points="553,100 563,105 553,110" fill="#a78bfa"/>
+
+  <!-- Compiler -->
+  <rect x="565" y="60" width="120" height="90" rx="12" fill="url(#procGrad)" filter="url(#shadow)"/>
+  <text x="625" y="98" text-anchor="middle" fill="#fff" font-size="12" font-weight="700">Compiler</text>
+  <text x="625" y="116" text-anchor="middle" fill="#c4b5fd" font-size="9">generates output</text>
+  <text x="625" y="128" text-anchor="middle" fill="#c4b5fd" font-size="9">directory</text>
+
+  <!-- Arrow: Compiler -> Output -->
+  <line x1="685" y1="105" x2="710" y2="105" stroke="#4ade80" stroke-width="2"/>
+  <polygon points="708,100 718,105 708,110" fill="#4ade80"/>
+
+  <!-- ================================================================ -->
+  <!-- OUTPUT: File tree -->
+  <!-- ================================================================ -->
+  <rect x="720" y="44" width="165" height="240" rx="12" fill="#052e16" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow)"/>
+  <text x="802" y="68" text-anchor="middle" fill="#4ade80" font-size="11" font-weight="700" letter-spacing="0.5">OUTPUT DIRECTORY</text>
+
+  <!-- NAVIGATION.md -->
+  <rect x="733" y="80" width="140" height="30" rx="6" fill="#14532d"/>
+  <text x="803" y="97" text-anchor="middle" fill="#bbf7d0" font-size="10" font-weight="600">NAVIGATION.md</text>
+  <text x="803" y="107" text-anchor="middle" fill="#86efac" font-size="7">L0 -- overview + lineage</text>
+
+  <!-- concepts.json -->
+  <rect x="733" y="116" width="140" height="30" rx="6" fill="#14532d"/>
+  <text x="803" y="133" text-anchor="middle" fill="#bbf7d0" font-size="10" font-weight="600">concepts.json</text>
+  <text x="803" y="143" text-anchor="middle" fill="#86efac" font-size="7">lookup index</text>
+
+  <!-- schemas/ folder -->
+  <rect x="733" y="152" width="140" height="122" rx="6" fill="#14532d"/>
+  <text x="803" y="169" text-anchor="middle" fill="#bbf7d0" font-size="10" font-weight="600">schemas/</text>
+
+  <!-- {schema}/ indent -->
+  <text x="746" y="187" fill="#86efac" font-size="9" font-weight="600">{schema}/</text>
+
+  <!-- _manifest.md -->
+  <rect x="749" y="194" width="114" height="28" rx="5" fill="#1a3a1f" stroke="#22c55e" stroke-width="0.5"/>
+  <text x="806" y="208" text-anchor="middle" fill="#bbf7d0" font-size="9" font-weight="600">_manifest.md</text>
+  <text x="806" y="219" text-anchor="middle" fill="#86efac" font-size="7">L1 -- schema details</text>
+
+  <!-- {table}.md -->
+  <rect x="749" y="228" width="114" height="38" rx="5" fill="#1a3a1f" stroke="#22c55e" stroke-width="0.5"/>
+  <text x="806" y="243" text-anchor="middle" fill="#bbf7d0" font-size="9" font-weight="600">{table}.md</text>
+  <text x="806" y="254" text-anchor="middle" fill="#86efac" font-size="7">L2 -- columns, enums, FKs,</text>
+  <text x="806" y="263" text-anchor="middle" fill="#86efac" font-size="7">metrics, examples</text>
+
+  <!-- Footer -->
+  <text x="450" y="292" text-anchor="middle" fill="#64748b" font-size="9">pip install dbook  --  dbook compile "postgresql://..." --output ./my_dbook</text>
+</svg>
