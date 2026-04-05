@@ -1,28 +1,28 @@
 # dbook
 
-A database metadata compiler that makes AI agents understand your database — not just its structure, but its meaning.
+A metadata compiler that turns database schemas into AI-optimized documentation.
 
-> **dbook** compiles your database schema into AI-ready metadata — enum values, semantic relationships, example queries, auto-detected metrics, data lineage, and PII markers. In SQL execution benchmarks, agents with dbook produce 100% correct SQL vs 75% with raw DDL.
+> **dbook** connects to your database, introspects every table, and automatically generates structured metadata that AI agents can navigate -- enum values, data lineage, example queries, auto-detected metrics, and PII markers. One command, fully automated, no manual authoring. Agents with dbook score **4.7/5** on SQL tasks vs **3.2/5** with raw DDL, while reading **77% fewer tokens**.
 
 ## The Problem
 
 Your AI agents are **blind to your data**.
 
-Raw DDL tells agents the structure — but not the meaning:
-- `status VARCHAR(20)` — agents guess "active", "enabled", "1"... the real values are "pending", "shipped", "delivered"
-- `user_id INTEGER REFERENCES users(id)` — but what IS this relationship? The customer? The assignee? The creator?
-- Your gold layer exists because consumers couldn't read silver — but AI agents CAN, with the right metadata
+Raw DDL tells agents the structure -- but not the meaning:
+- `status VARCHAR(20)` -- agents guess "active", "enabled", "1"... the real values are "pending", "shipped", "delivered"
+- `user_id INTEGER REFERENCES users(id)` -- but what IS this relationship? The customer? The assignee? The creator?
+- Your gold layer exists because consumers couldn't read silver -- but AI agents CAN, with the right metadata
 
 **The result:**
 - You maintain expensive gold layer ETL just for AI consumption
 - Every agent re-discovers the schema independently (10 agents = 10x cost)
-- Schema changes break agents silently — no one knows until production fails
-- Agents access PII columns unknowingly — compliance risk with every query
-- Agents guess enum values and write wrong SQL — silent data quality issues
+- Schema changes break agents silently -- no one knows until production fails
+- Agents access PII columns unknowingly -- compliance risk with every query
+- Agents guess enum values and write wrong SQL -- silent data quality issues
 
 ## What dbook Does
 
-Connects to any database, introspects the schema, and generates structured metadata that gives agents the context DDL lacks:
+One command connects to your database, introspects every table, runs `SELECT DISTINCT` on enum columns, traces foreign key chains, detects PII patterns, and generates a complete metadata directory -- no configuration, no manual authoring:
 
 <p align="center">
   <img src="docs/architecture.svg" alt="dbook Architecture" width="800">
@@ -35,68 +35,90 @@ dbook compile "postgresql://user:pass@host/db" --output ./my_dbook
 
 ### What agents get:
 
-**1. Enum value documentation** — auto-detected via `SELECT DISTINCT`
+**1. Enum value documentation** -- auto-detected via `SELECT DISTINCT`
 ```
 status: pending, confirmed, shipped, delivered, cancelled
 method: credit_card, debit_card, paypal, bank_transfer
 ```
 
-**2. Semantic FK descriptions** — agents understand relationships
+**2. Semantic FK descriptions** -- agents understand relationships
 ```
-→ users via user_id — the customer who placed this order
-← order_items.order_id — line items in this order
+-> users via user_id -- the customer who placed this order
+<- order_items.order_id -- line items in this order
 ```
 
-**3. Example queries** — patterns agents can follow
+**3. Example queries** -- patterns agents can follow
 ```sql
 - By status: SELECT * FROM orders WHERE status IN ('pending', 'confirmed')
 - Revenue over time: SELECT DATE(created_at), SUM(total) FROM orders GROUP BY DATE(created_at)
 ```
 
-**4. Auto-detected metrics** — common aggregations ready to use
+**4. Auto-detected metrics** -- common aggregations ready to use
 ```
 - Total Amount: SELECT SUM(total) FROM orders
 - Count by Status: SELECT status, COUNT(*) FROM orders GROUP BY status
 - Amount over time: SELECT DATE(created_at), SUM(total) FROM orders GROUP BY DATE(created_at)
 ```
 
-**5. Data lineage** — how tables connect in the data flow
+**5. Data lineage** -- how tables connect in the data flow
 ```
 Source tables: users, products (no dependencies)
-Intermediate: orders → depends on users | ← used by order_items, invoices
-Leaf: payments → depends on invoices
+Intermediate: orders -> depends on users | <- used by order_items, invoices
+Leaf: payments -> depends on invoices
 ```
 
-**6. PII detection** — marks sensitive columns, redacts sample data
+**6. PII detection** -- marks sensitive columns, redacts sample data
 ```
 | email | VARCHAR(255) | EMAIL (0.90) | high |
 | card_last_four | VARCHAR(4) | CREDIT_CARD_PARTIAL (0.70) | low |
 ```
 
-**7. Query validation** — SQLGlot-powered, catches errors before execution
+**7. Query validation** -- SQLGlot-powered, catches errors before execution
 ```python
 validator = QueryValidator(book)
 result = validator.validate("SELECT * FROM orders WHERE status = 'completed'")
 # Warning: 'completed' not in known values: pending, confirmed, shipped, delivered, cancelled
 ```
 
+## What Makes dbook Different
+
+dbook is not a documentation tool you maintain by hand. It is a compiler that connects to your live database, runs real queries, and generates everything automatically.
+
+| | Raw DDL | Manual docs | dbook |
+|---|---------|-------------|-------|
+| **What agents read** | Full schema dump | Whatever you wrote | Only the tables they need |
+| **Enum values** | Not available | You maintain them | Auto-discovered via `SELECT DISTINCT` |
+| **Metrics** | Agent guesses | You define them | Auto-detected (SUM columns, COUNT-by-enum, time series) |
+| **Data lineage** | Agent traces FKs manually | You diagram it | Auto-mapped from FK chains (root, intermediate, leaf) |
+| **Example queries** | None | You write them | Auto-generated (FK joins, unique-key lookups) |
+| **PII detection** | None | You flag columns | Auto-detected (email, SSN, phone patterns) |
+| **Schema changes** | Re-dump everything | You update manually | Per-table checksums, incremental recompilation |
+| **Setup effort** | Zero | Hours per schema | One command: `dbook compile` |
+| **Token cost** | 100% (reads everything) | Varies | 23% (reads only what's needed) |
+
+The token savings come from the architecture, not from compression. dbook organizes metadata into navigable layers so agents read 2-3 files per task instead of the entire schema. But the quality improvement comes from what those files contain -- actual enum values, real relationship semantics, working query patterns, and pre-computed metrics that raw DDL simply does not have.
+
 ## Key Benchmark Results
 
 ### Scorecard: dbook vs Raw DDL
 
-Tested on an Amazon-like e-commerce database (7 schemas, 34 tables) with 15 scenarios across 3 agent types (Billing, Care, Sales). Each scenario scored by a judge on 4 dimensions.
+Tested against a realistic e-commerce database modeled after Amazon: 7 schemas, 34 tables, covering users, orders, inventory, payments, and support. 15 real agent tasks across 3 agent personas (Billing, Care, Sales) -- each requiring the agent to find the right tables, write correct SQL, execute it, and return accurate results. Every scenario scored by a judge on 4 dimensions.
 
-- **dbook Score: 4.7/5** vs Baseline (raw DDL) **3.2/5** — improvement of **+1.5**
+- **dbook Score: 4.7/5** vs Baseline (raw DDL) **3.2/5** -- improvement of **+1.5**
 - **Token savings: 77%** (7,792 vs 33,656 tokens per scenario)
 
+The improvement is not just efficiency -- it is correctness. dbook agents find the right tables, use valid enum values in WHERE clauses, join on correct foreign keys, and return accurate results. Baseline agents reading raw DDL frequently guess wrong enum values, miss relevant tables, and produce SQL that returns empty or incorrect results.
+
 ### Per-Dimension Scoring
+
+The biggest gains are in SQL correctness and result accuracy -- exactly the dimensions where enum values, relationship metadata, and example queries make the difference.
 
 | Dimension | dbook | Baseline (DDL) | Delta |
 |-----------|-------|----------------|-------|
 | Table Discovery | 4.7 | 4.3 | +0.4 |
-| SQL Correctness | 4.7 | 3.0 | +1.7 |
-| Result Accuracy | 4.3 | 2.6 | +1.7 |
-| Response Quality | 4.7 | 2.7 | +2.0 |
+| SQL Correctness | 4.7 | 3.0 | **+1.7** |
+| Result Accuracy | 4.3 | 2.6 | **+1.7** |
+| Response Quality | 4.7 | 2.7 | **+2.0** |
 
 ### Per-Agent Breakdown
 
@@ -137,29 +159,29 @@ graph TD
     R --> AC[Agent Cards<br/>Billing / Care / Sales]
 ```
 
-## Built on agentlib
+## Navigation Architecture
 
-dbook is built on [agentlib](https://github.com/barkain/agentlib) — the knowledge library framework for AI agents.
+dbook uses [agentlib's](https://github.com/barkain/agentlib) proven L0/L1/L2 layered navigation -- the same architecture that makes AI agents efficient at consuming books, applied to databases.
 
-**The insight:** agentlib proved that AI agents consume knowledge more effectively through structured, layered navigation — not raw content dumps. Books need a table of contents, chapter summaries, and a concept index for agents to find what they need without reading everything.
+**agentlib provides the shelf system.** It defines how to organize any knowledge into navigable layers: a top-level overview (L0), section summaries (L1), and detailed pages (L2). This architecture is what delivers the 77% token savings -- agents read 2-3 files instead of everything.
 
-**Databases have the same problem.** An agent facing 50 database tables is like an agent facing a 500-page book — without navigation, it reads everything (wasteful) or guesses (wrong). dbook applies agentlib's proven L0/L1/L2 navigation architecture to databases:
+**dbook provides the books on the shelf.** The database-specific intelligence that agentlib cannot generate: enum values discovered from live data, FK relationship semantics, auto-detected metrics, data lineage graphs, PII markers, and working SQL examples. This is what delivers the quality improvement -- agents write correct SQL because they have the context DDL lacks.
 
-| agentlib (books) | dbook (databases) |
-|-----------------|-------------------|
-| NAVIGATION.md → book catalog | NAVIGATION.md → table overview |
-| manifest.json → chapter summaries | _manifest.md → schema details |
-| chunk .md → content sections | table .md → columns, values, metrics |
-| concepts.json → term lookup | Mechanical + LLM concept aliases |
-| SKILL.md → navigation protocol | SKILL.md → navigation protocol |
+| Layer | agentlib (generic) | dbook (database-specific) |
+|-------|-------------------|--------------------------|
+| L0 -- Overview | NAVIGATION.md | Schema listing with row counts, table descriptions |
+| L1 -- Section | _manifest.md | Per-schema details, cross-table relationships |
+| L2 -- Detail | content .md | Columns, enum values, FKs, metrics, sample data, example queries |
+| Lookup | concepts.json | Table/column term index with mechanical + LLM aliases |
+| Protocol | SKILL.md | Agent navigation instructions |
 
-agentlib makes books navigable. dbook makes databases navigable. Same architecture, different domain.
+agentlib is the navigation framework. dbook is the compiler that fills it with database intelligence no generic tool can provide.
 
 ## Architecture
 
 ```
-SQLAlchemy Inspector → BookMeta → Compiler → Output Directory
-                                     ↓
+SQLAlchemy Inspector -> BookMeta -> Compiler -> Output Directory
+                                     |
                       NAVIGATION.md    (table overview + lineage)
                       schemas/
                         {schema}/
@@ -171,7 +193,7 @@ SQLAlchemy Inspector → BookMeta → Compiler → Output Directory
 Database-agnostic via `Catalog` protocol. Default `SQLAlchemyCatalog` supports any SQLAlchemy-compatible database. DB type auto-detected from URL.
 
 ### Supported Databases
-PostgreSQL, MySQL, SQLite, Snowflake, BigQuery — any database with a SQLAlchemy dialect.
+PostgreSQL, MySQL, SQLite, Snowflake, BigQuery -- any database with a SQLAlchemy dialect.
 
 ## Usage
 
@@ -229,7 +251,7 @@ print(result.valid, result.errors, result.warnings)
 
 ## The Silver Layer Insight
 
-Traditional data pipelines create gold layers because consumers can't read raw data. With dbook, AI agents can understand silver directly — reducing the need for gold views for discovery and ad-hoc queries.
+Traditional data pipelines create gold layers because consumers can't read raw data. With dbook, AI agents can understand silver directly -- reducing the need for gold views for discovery and ad-hoc queries.
 
 <p align="center">
   <img src="docs/silver-layer.svg" alt="The Silver Layer Insight" width="800">
@@ -238,7 +260,7 @@ Traditional data pipelines create gold layers because consumers can't read raw d
 > **Note:** dbook reduces the need for gold views for discovery and ad-hoc queries.
 > Gold layers still provide value for: enforced business rules, canonical metric
 > definitions, data quality guarantees, and grain standardization. For critical metrics,
-> define them in `metrics.yaml` — dbook includes them in its output so agents use the
+> define them in `metrics.yaml` -- dbook includes them in its output so agents use the
 > canonical definition, not their own interpretation.
 
 ## Development
