@@ -4,6 +4,10 @@ A metadata compiler that turns database schemas into AI-optimized documentation.
 
 > **dbook** connects to your database, introspects every table, and automatically generates structured metadata that AI agents can navigate -- enum values, data lineage, example queries, auto-detected metrics, and PII markers. One command, fully automated, no manual authoring. Agents with dbook score **4.7/5** on SQL tasks vs **3.2/5** with raw DDL, while reading **77% fewer tokens**.
 
+<p align="center">
+  <img src="docs/dbook-animation.gif" alt="dbook in action" width="800">
+</p>
+
 ## What's New in 0.3.0
 
 - **Benchmark system** -- 15 real agent tasks across 3 personas (Billing, Care, Sales), each scored by a judge on 4 dimensions. Proves dbook's value quantitatively: **4.7/5** vs **3.2/5** baseline, **77% token savings**.
