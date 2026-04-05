@@ -43,7 +43,7 @@ One command connects to your database, introspects every table, runs `SELECT DIS
 </p>
 
 ```bash
-pip install git+https://github.com/ShurikM/dbook.git
+pip install dbook
 dbook compile "postgresql://user:pass@host/db" --output ./my_dbook
 ```
 
@@ -189,13 +189,13 @@ dbook compile "postgresql://user:pass@host/db" --output ./my_dbook
 
 ### With PII detection (marks sensitive columns, redacts sample data)
 ```bash
-pip install "dbook[pii] @ git+https://github.com/ShurikM/dbook.git"
+pip install "dbook[pii]"
 dbook compile "postgresql://..." --output ./my_dbook --pii
 ```
 
 ### With LLM enrichment (semantic summaries, concept aliases)
 ```bash
-pip install "dbook[llm] @ git+https://github.com/ShurikM/dbook.git"
+pip install "dbook[llm]"
 dbook compile "postgresql://..." --output ./my_dbook --llm --llm-provider anthropic --llm-key sk-...
 ```
 
@@ -230,9 +230,9 @@ print(result.valid, result.errors, result.warnings)
 
 | Feature | Install | Flag | What it adds |
 |---------|---------|------|-------------|
-| PII detection | `pip install "dbook[pii] @ git+https://github.com/ShurikM/dbook.git"` | `--pii` | Column sensitivity markers, sample data redaction |
-| LLM enrichment | `pip install "dbook[llm] @ git+https://github.com/ShurikM/dbook.git"` | `--llm` | Semantic summaries, concept aliases, schema narratives |
-| Metrics | `pip install "dbook[metrics] @ git+https://github.com/ShurikM/dbook.git"` | `--metrics` | User-defined canonical business metrics |
+| PII detection | `pip install "dbook[pii]"` | `--pii` | Column sensitivity markers, sample data redaction |
+| LLM enrichment | `pip install "dbook[llm]"` | `--llm` | Semantic summaries, concept aliases, schema narratives |
+| Metrics | `pip install "dbook[metrics]"` | `--metrics` | User-defined canonical business metrics |
 
 ## The Silver Layer Insight
 

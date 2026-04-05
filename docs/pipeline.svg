@@ -105,5 +105,5 @@
   <text x="806" y="263" text-anchor="middle" fill="#86efac" font-size="7">metrics, examples</text>
 
   <!-- Footer -->
-  <text x="450" y="292" text-anchor="middle" fill="#64748b" font-size="9">pip install git+https://github.com/ShurikM/dbook.git  --  dbook compile "postgresql://..." --output ./my_dbook</text>
+  <text x="450" y="292" text-anchor="middle" fill="#64748b" font-size="9">pip install dbook  --  dbook compile "postgresql://..." --output ./my_dbook</text>
 </svg>
