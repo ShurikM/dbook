@@ -12,20 +12,8 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+from dbook.tokens import count_tokens
 from scenarios.base import ScenarioSpec, ScenarioResult  # type: ignore[import-not-found]
-
-
-def count_tokens(text_str: str) -> int:
-    try:
-        from agentlib.chunker import count_tokens as _count  # type: ignore[import-not-found]
-        return _count(text_str)
-    except ImportError:
-        pass
-    try:
-        from lib.chunker import count_tokens as _count  # type: ignore[import-not-found]
-        return _count(text_str)
-    except ImportError:
-        return len(text_str) // 4
 
 
 class BaseAgent:

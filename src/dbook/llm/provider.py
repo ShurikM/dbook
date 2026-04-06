@@ -52,7 +52,12 @@ class AgentlibProvider:
     }
 
     def __init__(self, provider: str, api_key: str, model: str | None = None):
-        from agentlib.llm import LLMConfig as _AgentlibLLMConfig  # type: ignore[import-untyped]
+        try:
+            from lib.llm import LLMConfig as _AgentlibLLMConfig  # type: ignore[import-untyped]
+        except ImportError:
+            raise ImportError(
+                "LLM enrichment requires agentlib. Install it: pip install agentlib"
+            )
 
         # Map "gemini" -> "google" for agentlib compatibility
         agentlib_provider = "google" if provider == "gemini" else provider
@@ -63,7 +68,12 @@ class AgentlibProvider:
         )
 
     def complete(self, prompt: str, max_tokens: int = 500) -> str:
-        from agentlib.llm import call_llm as _agentlib_call_llm  # type: ignore[import-untyped]
+        try:
+            from lib.llm import call_llm as _agentlib_call_llm  # type: ignore[import-untyped]  # pyright: ignore[reportMissingImports]
+        except ImportError:
+            raise ImportError(
+                "LLM enrichment requires agentlib. Install it: pip install agentlib"
+            )
 
         return _agentlib_call_llm(self._config, prompt, max_tokens=max_tokens)
 

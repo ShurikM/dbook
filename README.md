@@ -1,6 +1,6 @@
 [![CI](https://github.com/ShurikM/dbook/actions/workflows/ci.yml/badge.svg)](https://github.com/ShurikM/dbook/actions)
 
-# dbook — v0.3.0
+# dbook — v0.4.0
 
 A metadata compiler that turns database schemas into AI-optimized documentation.
 
@@ -10,13 +10,12 @@ A metadata compiler that turns database schemas into AI-optimized documentation.
   <img src="docs/dbook-animation.gif" alt="dbook in action" width="800">
 </p>
 
-## What's New in 0.3.0
+## What's New in 0.4.0
 
-- **Benchmark system** -- 15 real agent tasks across 3 personas (Billing, Care, Sales), each scored by a judge on 4 dimensions. Proves dbook's value quantitatively: **4.7/5** vs **3.2/5** baseline, **77% token savings**.
-- **Schema-qualified NAVIGATION.md** -- table listings include schema prefixes for unambiguous selection in multi-schema databases.
-- **Unique-key lookup examples** -- table metadata now includes `SELECT ... WHERE pk = ?` patterns so agents can write point queries without guessing.
-- **Common query patterns from FK graph** -- foreign key relationships are analyzed to generate JOIN patterns, aggregation queries, and filter-by-enum examples automatically.
-- **Python 3.12+** required. See [pyproject.toml](pyproject.toml) for full dependency details.
+- **Clean plugin architecture** -- dbook core is fully self-contained, no external LLM dependency required
+- **LLM providers as plugins** -- agentlib, OpenAI, Anthropic, Gemini supported via `LLMProvider` protocol
+- **Own token counter** -- no longer depends on agentlib for token counting
+- **Removed agentlib shim** -- cleaner dependency graph, faster imports
 
 ## The Problem
 
@@ -152,21 +151,32 @@ The biggest gains are in SQL correctness and result accuracy -- exactly the dime
 
 ## Navigation Architecture
 
-dbook uses [agentlib's](https://github.com/barkain/agentlib) proven L0/L1/L2 layered navigation -- the same architecture that makes AI agents efficient at consuming books, applied to databases.
+dbook uses an L0/L1/L2 layered navigation architecture (inspired by [agentlib](https://github.com/barkain/agentlib)) that organizes metadata into progressively detailed layers. This architecture is what delivers the 77% token savings -- agents read 2-3 files per task instead of the entire schema.
 
-**agentlib provides the shelf system.** It defines how to organize any knowledge into navigable layers: a top-level overview (L0), section summaries (L1), and detailed pages (L2). This architecture is what delivers the 77% token savings -- agents read 2-3 files instead of everything.
-
-**dbook provides the books on the shelf.** The database-specific intelligence that agentlib cannot generate: enum values discovered from live data, FK relationship semantics, auto-detected metrics, data lineage graphs, PII markers, and working SQL examples. This is what delivers the quality improvement -- agents write correct SQL because they have the context DDL lacks.
-
-| Layer | agentlib (generic) | dbook (database-specific) |
-|-------|-------------------|--------------------------|
+| Layer | File | What it contains |
+|-------|------|-----------------|
 | L0 -- Overview | NAVIGATION.md | Schema listing with row counts, table descriptions |
 | L1 -- Section | _manifest.md | Per-schema details, cross-table relationships |
-| L2 -- Detail | content .md | Columns, enum values, FKs, metrics, sample data, example queries |
+| L2 -- Detail | {table}.md | Columns, enum values, FKs, metrics, sample data, example queries |
 | Lookup | concepts.json | Table/column term index with mechanical + LLM aliases |
 | Protocol | SKILL.md | Agent navigation instructions |
 
-agentlib is the navigation framework. dbook is the compiler that fills it with database intelligence no generic tool can provide.
+dbook's core -- compilation, metadata generation, enum discovery, FK analysis, PII detection -- works without any LLM. LLM enrichment is optional and adds semantic summaries, concept aliases, and schema narratives on top of the mechanical output.
+
+### LLM Provider Plugin Model
+
+dbook defines an `LLMProvider` protocol that any LLM backend can implement:
+
+- **`MockProvider`** -- built-in, deterministic responses for testing
+- **`AgentlibProvider`** -- uses agentlib's multi-provider LLM layer (Anthropic, OpenAI, Gemini, xAI, DeepSeek)
+- **Custom providers** -- implement the `LLMProvider` protocol with a single `complete()` method
+
+To use LLM enrichment, install a provider backend. For example, with agentlib:
+
+```bash
+pip install agentlib
+dbook compile "postgresql://..." --output ./my_dbook --llm --llm-provider anthropic --llm-key sk-...
+```
 
 ## Architecture
 
