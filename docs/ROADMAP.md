@@ -115,6 +115,17 @@ Compare two BookMeta snapshots and generate human-readable diff reports:
 - **CLI:** `dbook diff artifact_v1.json artifact_v2.json` produces the diff report.
 - **Why:** SHA256 tells you IF something changed. Schema diff tells you WHAT changed. Essential for reviewing database migrations in pull requests and understanding the impact of schema evolution on downstream agents and UCs.
 
+### 3.4 dbt Semantic Layer Integration
+
+Import dbt's semantic definitions to combine curated business metrics with dbook's auto-generated metadata:
+
+- **What:** When a dbt project exists alongside the database, dbook reads `semantic_models.yml` and `metrics.yml` to extract curated metric definitions, dimensions, and entity relationships.
+- **High-confidence tier:** Metrics imported from dbt are marked as "curated" in the concept index and table files. Agents see a clear signal: "this metric has a canonical definition" vs. "this metric was auto-detected from column patterns."
+- **Output:** Each table .md file gains a "Curated Metrics" section (from dbt) distinct from "Auto-Detected Metrics" (from dbook). The concept index maps business terms from dbt's semantic models to tables/columns with a `source: "dbt"` marker.
+- **Fallback pattern:** For questions matching a dbt metric, agents use the canonical definition. For everything else, they fall back to dbook's schema-guided metadata. This implements the hybrid pattern recommended by dbt's own benchmarks.
+- **CLI:** `dbook compile "postgresql://..." --dbt-project ./my_dbt_project` discovers and imports semantic definitions automatically.
+- **Why:** dbt's 2026 benchmarks show semantic layers achieve 98-100% accuracy for in-scope queries vs. ~62-90% for text-to-SQL. Importing these definitions gives dbook users the best of both worlds — guaranteed accuracy for modeled metrics, universal coverage for everything else — without requiring agents to interact with two separate systems.
+
 ---
 
 ## Phase 4: MCP Server (P1)
@@ -227,6 +238,7 @@ Publish dbook as a standalone package on PyPI:
 | 2.3 Type-aware query hints | Medium | Low | P2 |
 | 3.1 Embedding search | Medium | Medium | P2 |
 | 3.2 Concept enrichment | Medium | Low | P2 |
+| 3.4 dbt semantic integration | High | Medium | P2 |
 | 5.1 JSON output | Medium | Low | P2 |
 | 3.3 Schema diff reports | Medium | Low | P2 |
 | 4.2 Claude Desktop integration | Medium | Low | P2 |

@@ -111,6 +111,21 @@ dbook is not a documentation tool you maintain by hand. It is a compiler that co
 
 The token savings come from the architecture, not from compression. dbook organizes metadata into navigable layers so agents read 2-3 files per task instead of the entire schema. But the quality improvement comes from what those files contain -- actual enum values, real relationship semantics, working query patterns, and pre-computed metrics that raw DDL simply does not have.
 
+## dbook vs. Semantic Layers
+
+Semantic layers like [dbt's Semantic Layer](https://docs.getdbt.com/docs/build/about-metricflow) guarantee correctness for **modeled** metrics — the LLM picks the right metric/dimension, and a deterministic engine generates provably correct SQL. But they only cover what's been explicitly modeled, and require significant upfront investment.
+
+dbook solves a different problem: giving agents enough context to work with **any** table, **any** column, **any** query — with zero setup. The two approaches are complementary:
+
+| | Semantic Layer (dbt) | dbook |
+|--|--|--|
+| **Correctness** | Guaranteed (for modeled queries) | Agent-dependent |
+| **Coverage** | Only modeled metrics | Any query the schema supports |
+| **Setup cost** | High (human-curated ontology) | Zero (`dbook compile <url>`) |
+| **Failure mode** | Explicit refusal | Best-effort with rich context |
+
+**The ideal stack uses both:** semantic layer for high-stakes business metrics (board reports, KPIs, audited numbers), dbook for everything else (ad-hoc exploration, cross-schema discovery, novel questions nobody pre-modeled). dbook's roadmap includes importing dbt semantic definitions so agents get curated metrics with high confidence and fall back to schema-guided SQL for the rest.
+
 ## Key Benchmark Results
 
 ### Scorecard: dbook vs Raw DDL
@@ -255,8 +270,9 @@ Traditional data pipelines create gold layers because consumers can't read raw d
 > **Note:** dbook reduces the need for gold views for discovery and ad-hoc queries.
 > Gold layers still provide value for: enforced business rules, canonical metric
 > definitions, data quality guarantees, and grain standardization. For critical metrics,
-> define them in `metrics.yaml` -- dbook includes them in its output so agents use the
-> canonical definition, not their own interpretation.
+> define them in `metrics.yaml` or import them from your dbt semantic layer --
+> dbook includes canonical definitions in its output so agents use the
+> authoritative calculation, not their own interpretation.
 
 ## Development
 
